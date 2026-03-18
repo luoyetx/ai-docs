@@ -1,0 +1,1966 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="技术笔记 - Linux、系统编程、分布式">
+      
+      
+        <meta name="author" content="coder">
+      
+      
+      
+        <link rel="prev" href="../..">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>文件 I/O - Tech Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#linux-io" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Tech Notes" class="md-header__button md-logo" aria-label="Tech Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tech Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              文件 I/O
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Linux
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tech Notes" class="md-nav__button md-logo" aria-label="Tech Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tech Notes
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linux
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Linux
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件 I/O
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件 I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#io" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、I/O 路径全景
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buffered-iostdio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、Buffered I/O（用户态缓冲，stdio）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、Buffered I/O（用户态缓冲，stdio）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#standard-syscall-ioreadwrite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、Standard syscall I/O（内核缓冲，read/write）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、Standard syscall I/O（内核缓冲，read/write）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#page-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Page Cache 行为
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、mmap（内存映射）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、mmap（内存映射）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键 flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#madvise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        madvise 调优
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        零拷贝优势
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmap-vs-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mmap vs read 的选择边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#huge-pages-tlb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        大页（Huge Pages）与 TLB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direct-ioo_direct" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、Direct I/O（O_DIRECT）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、Direct I/O（O_DIRECT）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对齐要求
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#io_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、异步 I/O
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、异步 I/O">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-posix-aio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 POSIX AIO（不推荐）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-io_uringlinux-51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 io_uring（推荐，Linux 5.1+）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#io_uring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io_uring 适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sendfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、sendfile 与零拷贝
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、横向对比
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        九、大型只读索引文件的最佳实践
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="九、大型只读索引文件的最佳实践">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景一：内存能装下整个文件，延迟敏感
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景二：内存放不下，依赖热点缓存
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#page-cachevespa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景三：不想污染 page cache，需要大页（Vespa 方案）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fsync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十、fsync 与数据持久性
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十一、常用调优工具
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十二、总结选择流程
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#io" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、I/O 路径全景
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buffered-iostdio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、Buffered I/O（用户态缓冲，stdio）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、Buffered I/O（用户态缓冲，stdio）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#standard-syscall-ioreadwrite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、Standard syscall I/O（内核缓冲，read/write）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、Standard syscall I/O（内核缓冲，read/write）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#page-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Page Cache 行为
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、mmap（内存映射）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、mmap（内存映射）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键 flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#madvise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        madvise 调优
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        零拷贝优势
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmap-vs-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mmap vs read 的选择边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#huge-pages-tlb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        大页（Huge Pages）与 TLB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direct-ioo_direct" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、Direct I/O（O_DIRECT）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、Direct I/O（O_DIRECT）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对齐要求
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#io_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、异步 I/O
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、异步 I/O">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-posix-aio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 POSIX AIO（不推荐）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-io_uringlinux-51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 io_uring（推荐，Linux 5.1+）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#io_uring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io_uring 适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sendfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、sendfile 与零拷贝
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、横向对比
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        九、大型只读索引文件的最佳实践
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="九、大型只读索引文件的最佳实践">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景一：内存能装下整个文件，延迟敏感
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景二：内存放不下，依赖热点缓存
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#page-cachevespa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景三：不想污染 page cache，需要大页（Vespa 方案）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fsync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十、fsync 与数据持久性
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十一、常用调优工具
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十二、总结选择流程
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="linux-io">Linux 文件 I/O 系统性总结<a class="headerlink" href="#linux-io" title="Permanent link">&para;</a></h1>
+<h2 id="io">一、I/O 路径全景<a class="headerlink" href="#io" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>用户程序
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>   ├── buffered I/O (stdio)     fread/fwrite → 用户态缓冲区 → syscall
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   │
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>   ├── standard syscall I/O     read/write   → page cache → 磁盘
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   │
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   ├── mmap                     虚拟地址映射 → page cache → 磁盘
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   │
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>   ├── direct I/O (O_DIRECT)    read/write   → 绕过 page cache → 磁盘
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>   │
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>   └── io_uring / AIO           异步提交，完成后通知
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>内核层
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>   ├── page cache（文件页缓存）
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>   ├── block layer（I/O 调度）
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>   └── 设备驱动
+</span></code></pre></div>
+<hr />
+<h2 id="buffered-iostdio">二、Buffered I/O（用户态缓冲，stdio）<a class="headerlink" href="#buffered-iostdio" title="Permanent link">&para;</a></h2>
+<h3 id="_1">原理<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<p><code>FILE *</code> 接口在用户态维护一个缓冲区（默认 8KB），<code>fread/fwrite</code> 先操作这块缓冲，攒够一批再调 <code>read/write</code> syscall。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kt">FILE</span><span class="w"> </span><span class="o">*</span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fopen</span><span class="p">(</span><span class="s">&quot;file.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="p">);</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kt">char</span><span class="w"> </span><span class="n">buf</span><span class="p">[</span><span class="mi">1024</span><span class="p">];</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">fread</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1024</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">);</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">fclose</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+</span></code></pre></div>
+<h3 id="_2">优点<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>减少 syscall 次数，适合大量小 I/O</li>
+<li>提供 <code>fgets</code>/<code>fprintf</code> 等格式化接口</li>
+</ul>
+<h3 id="_3">缺点<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>多一层缓冲，数据经过：用户态 buffer → page cache → 磁盘，延迟略高</li>
+<li>线程不安全（需要加锁或用 <code>flockfile</code>）</li>
+<li>缓冲区大小固定，不适合大块随机读</li>
+</ul>
+<h3 id="_4">适用场景<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>日志写入、配置文件读取、文本处理</li>
+<li>需要行缓冲或格式化输出的场景</li>
+</ul>
+<hr />
+<h2 id="standard-syscall-ioreadwrite">三、Standard syscall I/O（内核缓冲，read/write）<a class="headerlink" href="#standard-syscall-ioreadwrite" title="Permanent link">&para;</a></h2>
+<h3 id="_5">原理<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p>直接调用 <code>read/write</code> syscall，数据经过内核 <strong>page cache</strong>。写入时先写入 page cache（dirty page），由内核定期或手动 <code>fsync</code> 刷盘。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">&quot;file&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="p">);</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kt">char</span><span class="w"> </span><span class="n">buf</span><span class="p">[</span><span class="mi">4096</span><span class="p">];</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kt">ssize_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
+</span></code></pre></div>
+<h3 id="page-cache">Page Cache 行为<a class="headerlink" href="#page-cache" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>读</strong>：先查 page cache，命中则直接返回；未命中触发 page fault，从磁盘读入 page cache 再返回</li>
+<li><strong>写</strong>：写入 page cache 即返回，标记为 dirty；内核后台 writeback 刷盘</li>
+<li><strong>Readahead</strong>：顺序读时内核自动预读后续页（默认 128KB），提升顺序读吞吐</li>
+</ul>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// 控制 readahead 行为</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">posix_fadvise</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">POSIX_FADV_SEQUENTIAL</span><span class="p">);</span><span class="w">  </span><span class="c1">// 顺序读，加大预读</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">posix_fadvise</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">POSIX_FADV_RANDOM</span><span class="p">);</span><span class="w">      </span><span class="c1">// 随机读，关闭预读</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">posix_fadvise</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">POSIX_FADV_DONTNEED</span><span class="p">);</span><span class="w">    </span><span class="c1">// 读完通知内核可以回收</span>
+</span></code></pre></div>
+<h3 id="_6">优点<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>简单直接</li>
+<li>page cache 透明加速重复读</li>
+<li>顺序写有 writeback 聚合，实际吞吐高</li>
+</ul>
+<h3 id="_7">缺点<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>数据要在用户 buf 和 page cache 之间 copy（一次拷贝）</li>
+<li>page cache 占用内存，大文件可能 evict 热数据</li>
+<li><code>write</code> 返回不代表落盘，需要 <code>fsync</code> 保证持久性</li>
+</ul>
+<h3 id="_8">适用场景<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>通用文件读写</li>
+<li>数据库 WAL 日志（结合 <code>fsync</code>）</li>
+<li>大多数应用程序的默认选择</li>
+</ul>
+<hr />
+<h2 id="mmap">四、mmap（内存映射）<a class="headerlink" href="#mmap" title="Permanent link">&para;</a></h2>
+<h3 id="_9">原理<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
+<p>将文件映射到进程虚拟地址空间，访问内存即访问文件。底层仍通过 page cache，但不需要 <code>read/write</code> 拷贝——直接访问 page cache 中的物理页。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">&quot;file&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="p">);</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">struct</span><span class="w"> </span><span class="nc">stat</span><span class="w"> </span><span class="n">st</span><span class="p">;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">st</span><span class="p">);</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">,</span><span class="w"> </span><span class="n">PROT_READ</span><span class="p">,</span><span class="w"> </span><span class="n">MAP_SHARED</span><span class="p">,</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1">// 直接访问 p[offset]，page fault 时内核自动从磁盘读入</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">munmap</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">);</span>
+</span></code></pre></div>
+<h3 id="flags">关键 flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MAP_SHARED</code></td>
+<td>映射到 page cache，写操作直接修改 page cache（对其他进程可见）</td>
+</tr>
+<tr>
+<td><code>MAP_PRIVATE</code></td>
+<td>写时复制（COW），修改不影响原文件</td>
+</tr>
+<tr>
+<td><code>MAP_POPULATE</code></td>
+<td>mmap 时立即预读所有页，避免运行时 page fault</td>
+</tr>
+<tr>
+<td><code>MAP_LOCKED</code></td>
+<td>等同 mlock，禁止页被 swap 出去</td>
+</tr>
+<tr>
+<td><code>MAP_HUGETLB</code></td>
+<td>使用大页（2MB/1GB），需要系统预留 hugepage</td>
+</tr>
+<tr>
+<td><code>MAP_ANONYMOUS</code></td>
+<td>匿名映射，不关联文件（用于内存分配）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="madvise">madvise 调优<a class="headerlink" href="#madvise" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_SEQUENTIAL</span><span class="p">);</span><span class="w">   </span><span class="c1">// 顺序访问，内核加大预读</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_RANDOM</span><span class="p">);</span><span class="w">       </span><span class="c1">// 随机访问，关闭预读</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_WILLNEED</span><span class="p">);</span><span class="w">     </span><span class="c1">// 预热，提示内核预读</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_DONTNEED</span><span class="p">);</span><span class="w">     </span><span class="c1">// 用完，提示内核可以回收</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_HUGEPAGE</span><span class="p">);</span><span class="w">     </span><span class="c1">// 启用透明大页（THP）</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_DONTDUMP</span><span class="p">);</span><span class="w">     </span><span class="c1">// 排除在 core dump 之外（大索引文件常用）</span>
+</span></code></pre></div>
+<h3 id="_10">零拷贝优势<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>read/write:  磁盘 → page cache → 用户 buf     （1次拷贝）
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>mmap:        磁盘 → page cache               （0次拷贝，直接访问）
+</span></code></pre></div>
+<h3 id="mmap-vs-read">mmap vs read 的选择边界<a class="headerlink" href="#mmap-vs-read" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>文件较小（&lt; 几十 MB）</strong>：<code>read</code> 通常更快，mmap 的 VMA 管理开销不可忽略</li>
+<li><strong>大文件随机读</strong>：mmap 更好，避免每次 <code>read</code> syscall + 拷贝</li>
+<li><strong>多进程共享</strong>：<code>MAP_SHARED</code> 共享同一份 page cache，节省物理内存</li>
+<li><strong>需要就地修改文件</strong>：mmap + <code>MAP_SHARED</code> + <code>PROT_WRITE</code> 最简单</li>
+</ul>
+<h3 id="huge-pages-tlb">大页（Huge Pages）与 TLB<a class="headerlink" href="#huge-pages-tlb" title="Permanent link">&para;</a></h3>
+<p>TLB（Translation Lookaside Buffer）是页表缓存，容量有限（通常 1500 个 entry）。</p>
+<table>
+<thead>
+<tr>
+<th>页大小</th>
+<th>1GB 文件所需 TLB entry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4KB</td>
+<td>262,144</td>
+</tr>
+<tr>
+<td>2MB</td>
+<td>512</td>
+</tr>
+<tr>
+<td>1GB</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>对大文件的随机读，TLB miss 是主要瓶颈之一，大页可以显著改善。</p>
+<p><strong>两种大页方式：</strong></p>
+<ol>
+<li><strong>显式大页（HugeTLB）</strong>：<code>MAP_HUGETLB</code>，需要管理员预留（<code>/proc/sys/vm/nr_hugepages</code>），不灵活</li>
+<li><strong>透明大页（THP）</strong>：<code>MADV_HUGEPAGE</code>，内核自动在后台将连续 4KB 页合并成 2MB 大页，对匿名内存效果好，对 file-backed mmap 效果略差（page cache 分配更碎片化）</li>
+</ol>
+<h3 id="_11">适用场景<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>大型只读索引文件（搜索引擎、数据库索引）</li>
+<li>数据库 buffer pool（如 InnoDB 用 mmap 管理共享内存）</li>
+<li>需要多进程共享同一文件内容</li>
+<li>实现简单的持久化 key-value store</li>
+</ul>
+<hr />
+<h2 id="direct-ioo_direct">五、Direct I/O（O_DIRECT）<a class="headerlink" href="#direct-ioo_direct" title="Permanent link">&para;</a></h2>
+<h3 id="_12">原理<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h3>
+<p>绕过 page cache，数据直接在用户 buf 和磁盘设备之间传输。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// 注意：buffer、offset、length 都必须按 512B 或 4096B 对齐</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">&quot;file&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">O_DIRECT</span><span class="p">);</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">posix_memalign</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">);</span><span class="w">  </span><span class="c1">// 对齐分配</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="kt">ssize_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">);</span><span class="w">   </span><span class="c1">// offset 和 length 也必须对齐</span>
+</span></code></pre></div>
+<h3 id="_13">对齐要求<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h3>
+<p>内核要求（以 Linux 为例）：
+- buffer 地址：按 <code>logical_block_size</code> 对齐（通常 512B，SSD 可能 4096B）
+- 读写长度：按 <code>logical_block_size</code> 对齐
+- 文件偏移：按 <code>logical_block_size</code> 对齐</p>
+<p>不满足对齐会返回 <code>EINVAL</code>。</p>
+<h3 id="_14">优点<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h3>
+<ul>
+<li>完全避免 page cache，不污染缓存（适合一次性大文件读取）</li>
+<li>写入延迟更可预测（没有 writeback 的不确定性）</li>
+<li>数据库可以自己管理 buffer pool，不需要 OS 帮忙缓存</li>
+</ul>
+<h3 id="_15">缺点<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h3>
+<ul>
+<li>使用复杂，必须处理对齐</li>
+<li>小 I/O 性能差（没有 readahead 聚合）</li>
+<li>不适合随机小读，每次都是真实磁盘 I/O</li>
+</ul>
+<h3 id="_16">适用场景<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h3>
+<ul>
+<li>数据库自管理 buffer pool（PostgreSQL、MySQL InnoDB 可选开启）</li>
+<li>大文件备份/复制（不希望污染 page cache）</li>
+<li>需要精确控制 I/O 时序的场景</li>
+<li>与匿名 mmap 结合做大文件预热（Vespa 的做法）</li>
+</ul>
+<hr />
+<h2 id="io_1">六、异步 I/O<a class="headerlink" href="#io_1" title="Permanent link">&para;</a></h2>
+<h3 id="61-posix-aio">6.1 POSIX AIO（不推荐）<a class="headerlink" href="#61-posix-aio" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">struct</span><span class="w"> </span><span class="nc">aiocb</span><span class="w"> </span><span class="n">cb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="p">.</span><span class="n">aio_fildes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="p">.</span><span class="n">aio_buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="p">.</span><span class="n">aio_nbytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">,</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="p">.</span><span class="n">aio_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">};</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">aio_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cb</span><span class="p">);</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1">// ... 做其他事 ...</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">aio_suspend</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cb</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w">  </span><span class="c1">// 等待完成</span>
+</span></code></pre></div>
+<p>Linux 的 POSIX AIO 实现用线程模拟，性能差，不建议使用。</p>
+<h3 id="62-io_uringlinux-51">6.2 io_uring（推荐，Linux 5.1+）<a class="headerlink" href="#62-io_uringlinux-51" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">struct</span><span class="w"> </span><span class="nc">io_uring</span><span class="w"> </span><span class="n">ring</span><span class="p">;</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">io_uring_queue_init</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="k">struct</span><span class="w"> </span><span class="nc">io_uring_sqe</span><span class="w"> </span><span class="o">*</span><span class="n">sqe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_uring_get_sqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">io_uring_prep_read</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span><span class="p">);</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span><span class="w"> </span><span class="n">user_data</span><span class="p">);</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">io_uring_submit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="k">struct</span><span class="w"> </span><span class="nc">io_uring_cqe</span><span class="w"> </span><span class="o">*</span><span class="n">cqe</span><span class="p">;</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">io_uring_wait_cqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="c1">// cqe-&gt;res 是返回值</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">io_uring_cqe_seen</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span><span class="w"> </span><span class="n">cqe</span><span class="p">);</span>
+</span></code></pre></div>
+<p><strong>io_uring 的核心优势：</strong>
+- 共享内存环形队列，批量提交减少 syscall 次数
+- 支持 <code>SQPOLL</code> 模式：内核线程轮询 SQ，零 syscall 提交
+- 支持 fixed buffers / fixed files，减少内核态地址转换开销
+- 真正的内核原生异步，不依赖线程
+- 支持链式操作（<code>IOSQE_IO_LINK</code>），如 read 完自动 write</p>
+<h3 id="io_uring">io_uring 适用场景<a class="headerlink" href="#io_uring" title="Permanent link">&para;</a></h3>
+<ul>
+<li>高并发网络 + 文件 I/O 混合（如高性能 web server）</li>
+<li>需要批量发起大量 I/O 请求</li>
+<li>数据库存储引擎的底层 I/O 层</li>
+<li>替代 epoll + 线程池的架构</li>
+</ul>
+<hr />
+<h2 id="sendfile">七、sendfile 与零拷贝<a class="headerlink" href="#sendfile" title="Permanent link">&para;</a></h2>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1">// 将文件内容直接发送到 socket，全程在内核完成</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">sendfile</span><span class="p">(</span><span class="n">socket_fd</span><span class="p">,</span><span class="w"> </span><span class="n">file_fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">offset</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span>
+</span></code></pre></div>
+<p>数据路径：
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>磁盘 → page cache → socket buffer   （内核内部，无用户态拷贝）
+</span></code></pre></div></p>
+<p>适用场景：静态文件服务（nginx 的核心优化之一）。</p>
+<hr />
+<h2 id="_17">八、横向对比<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>拷贝次数</th>
+<th>page cache</th>
+<th>对齐要求</th>
+<th>随机读</th>
+<th>顺序读</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stdio (buffered)</td>
+<td>2</td>
+<td>经过</td>
+<td>无</td>
+<td>差</td>
+<td>好</td>
+<td>文本/日志</td>
+</tr>
+<tr>
+<td>read/write</td>
+<td>1</td>
+<td>经过</td>
+<td>无</td>
+<td>中</td>
+<td>好</td>
+<td>通用</td>
+</tr>
+<tr>
+<td>mmap</td>
+<td>0</td>
+<td>经过</td>
+<td>无</td>
+<td>好</td>
+<td>好</td>
+<td>大文件随机读，多进程共享</td>
+</tr>
+<tr>
+<td>O_DIRECT</td>
+<td>1</td>
+<td>绕过</td>
+<td>必须</td>
+<td>差（无缓存）</td>
+<td>好（大块）</td>
+<td>数据库 buffer pool</td>
+</tr>
+<tr>
+<td>mmap + DirectIO</td>
+<td>0</td>
+<td>绕过</td>
+<td>自行处理</td>
+<td>好</td>
+<td>好</td>
+<td>大索引预热（Vespa）</td>
+</tr>
+<tr>
+<td>io_uring</td>
+<td>1</td>
+<td>经过</td>
+<td>无</td>
+<td>好</td>
+<td>好</td>
+<td>高并发异步 I/O</td>
+</tr>
+<tr>
+<td>sendfile</td>
+<td>0</td>
+<td>经过</td>
+<td>无</td>
+<td>-</td>
+<td>极好</td>
+<td>静态文件服务</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_18">九、大型只读索引文件的最佳实践<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h2>
+<p>这是搜索引擎、向量数据库等场景的典型需求。</p>
+<h3 id="_19">场景一：内存能装下整个文件，延迟敏感<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">&quot;index.bin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="p">);</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">PROT_READ</span><span class="p">,</span><span class="w"> </span><span class="n">MAP_SHARED</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">MAP_POPULATE</span><span class="p">,</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_HUGEPAGE</span><span class="p">);</span><span class="w">   </span><span class="c1">// 启用 THP</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_RANDOM</span><span class="p">);</span><span class="w">     </span><span class="c1">// 关闭 readahead（随机访问）</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_DONTDUMP</span><span class="p">);</span><span class="w">   </span><span class="c1">// 不写入 core dump</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="n">mlock</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span><span class="w">                    </span><span class="c1">// 防止被 swap</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w">  </span><span class="c1">// mmap 后 fd 可以关闭</span>
+</span></code></pre></div>
+<h3 id="_20">场景二：内存放不下，依赖热点缓存<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">&quot;index.bin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="p">);</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">PROT_READ</span><span class="p">,</span><span class="w"> </span><span class="n">MAP_SHARED</span><span class="p">,</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_RANDOM</span><span class="p">);</span><span class="w">  </span><span class="c1">// 关闭 readahead，每次只读需要的页</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1">// 让 OS page cache 做 LRU，热点数据自然留在内存</span>
+</span></code></pre></div>
+<h3 id="page-cachevespa">场景三：不想污染 page cache，需要大页（Vespa 方案）<a class="headerlink" href="#page-cachevespa" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1">// 1. 分配匿名内存（对齐到 DirectIO 要求）</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">PROT_READ</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">PROT_WRITE</span><span class="p">,</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">               </span><span class="n">MAP_ANON</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">MAP_PRIVATE</span><span class="p">,</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">madvise</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">MADV_HUGEPAGE</span><span class="p">);</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="c1">// 2. 用 DirectIO 将文件内容读入</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">&quot;index.bin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">O_DIRECT</span><span class="p">);</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="n">pread</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="c1">// 3. 改为只读保护</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="n">mprotect</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">PROT_READ</span><span class="p">);</span>
+</span></code></pre></div>
+<hr />
+<h2 id="fsync">十、fsync 与数据持久性<a class="headerlink" href="#fsync" title="Permanent link">&para;</a></h2>
+<p>写入 <code>write</code> 后数据只在 page cache（dirty page），断电会丢失。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span><span class="w">   </span><span class="c1">// 写入 page cache</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">fsync</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w">               </span><span class="c1">// 强制刷盘，返回后数据持久化</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">fdatasync</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w">           </span><span class="c1">// 只刷数据，不刷 metadata（inode mtime等），更快</span>
+</span></code></pre></div>
+<p><strong>常见策略：</strong></p>
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>持久性</th>
+<th>性能</th>
+<th>典型场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>不 fsync</td>
+<td>无保证</td>
+<td>最高</td>
+<td>可重建的缓存文件</td>
+</tr>
+<tr>
+<td>定期 fsync</td>
+<td>丢失最近 N 秒</td>
+<td>高</td>
+<td>日志（允许少量丢失）</td>
+</tr>
+<tr>
+<td>每次写后 fsync</td>
+<td>强保证</td>
+<td>低</td>
+<td>数据库事务提交</td>
+</tr>
+<tr>
+<td><code>O_DSYNC</code></td>
+<td>强保证</td>
+<td>中</td>
+<td>每次 write 自动 fdatasync</td>
+</tr>
+<tr>
+<td>WAL + group commit</td>
+<td>强保证</td>
+<td>高</td>
+<td>数据库标准做法</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_21">十一、常用调优工具<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># 查看 page cache 使用情况</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>cat<span class="w"> </span>/proc/meminfo<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;Cached|Buffers|Dirty&quot;</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># 统计进程内存映射</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>cat<span class="w"> </span>/proc/&lt;pid&gt;/maps
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>cat<span class="w"> </span>/proc/&lt;pid&gt;/smaps<span class="w">  </span><span class="c1"># 更详细，包含 RSS、PSS、Huge Pages</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="c1"># 查看文件是否在 page cache 中</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>fincore<span class="w"> </span>&lt;file&gt;<span class="w">           </span><span class="c1"># 需要安装 linux-ftools</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>vmtouch<span class="w"> </span>&lt;file&gt;<span class="w">           </span><span class="c1"># 更常用</span>
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="c1"># 主动预热文件到 page cache</span>
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>vmtouch<span class="w"> </span>-t<span class="w"> </span>&lt;file&gt;
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="c1"># 清空 page cache（测试用）</span>
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="nb">echo</span><span class="w"> </span><span class="m">3</span><span class="w"> </span>&gt;<span class="w"> </span>/proc/sys/vm/drop_caches
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="c1"># 查看 THP 使用情况</span>
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>cat<span class="w"> </span>/proc/meminfo<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Huge
+</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>cat<span class="w"> </span>/sys/kernel/mm/transparent_hugepage/enabled
+</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>
+</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="c1"># I/O 性能分析</span>
+</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>iostat<span class="w"> </span>-x<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>iotop
+</span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>perf<span class="w"> </span>trace<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;read,write,mmap&#39;</span>
+</span></code></pre></div>
+<hr />
+<h2 id="_22">十二、总结选择流程<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>需要文件 I/O？
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>│
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>├── 需要格式化/行处理？ → stdio (fread/fwrite)
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>│
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>├── 普通读写，内容不大？ → read/write
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>│
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>├── 大文件随机读，进程内独享？
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>│   ├── 内存能装下 → mmap + MAP_POPULATE + mlock + MADV_HUGEPAGE
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>│   └── 内存装不下 → mmap + MADV_RANDOM（靠 page cache LRU）
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>│
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>├── 大文件随机读，多进程共享？ → mmap + MAP_SHARED
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>│
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>├── 不想污染 page cache？ → O_DIRECT（数据库 buffer pool）
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>│
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>├── 大文件一次性预热 + 大页 + 不污染 cache？
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>│   → MAP_ANON + MADV_HUGEPAGE + O_DIRECT ReadBuf（Vespa 方案）
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>│
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>├── 高并发 I/O，需要异步？ → io_uring
+</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>│
+</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>└── 文件内容发到网络？ → sendfile
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
