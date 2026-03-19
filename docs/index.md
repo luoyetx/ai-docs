@@ -7,6 +7,7 @@
 ### Linux 系统
 
 - [文件 I/O 系统性总结](linux/file_io.md) — 从 buffered I/O 到 io_uring 的全景梳理
+- [Coredump 全过程与细节](linux/coredump.md) — 从信号触发到 ELF core 文件生成的完整链路
 
 ## 关于
 

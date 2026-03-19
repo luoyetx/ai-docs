@@ -40,6 +40,7 @@ nav:
   - Home: index.md
   - Linux:
     - 文件 I/O: linux/file_io.md
+    - Coredump 全过程: linux/coredump.md
 
 markdown_extensions:
   - pymdownx.highlight:
