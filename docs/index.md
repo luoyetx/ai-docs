@@ -8,6 +8,7 @@
 
 - [文件 I/O 系统性总结](linux/file_io.md) — 从 buffered I/O 到 io_uring 的全景梳理
 - [Coredump 全过程与细节](linux/coredump.md) — 从信号触发到 ELF core 文件生成的完整链路
+- [perf 到火焰图全流程](linux/perf_flamegraph.md) — 从 perf record 采样到生成交互式火焰图的完整细节
 
 ## 关于
 
