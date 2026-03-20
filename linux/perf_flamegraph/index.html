@@ -1,0 +1,2528 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="技术笔记 - Linux、系统编程、分布式">
+      
+      
+        <meta name="author" content="coder">
+      
+      
+      
+        <link rel="prev" href="../coredump/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>perf 与火焰图 - Tech Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#linux-perf" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Tech Notes" class="md-header__button md-logo" aria-label="Tech Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tech Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              perf 与火焰图
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../file_io/" class="md-tabs__link">
+          
+  
+  
+  Linux
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tech Notes" class="md-nav__button md-logo" aria-label="Tech Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tech Notes
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linux
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Linux
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../file_io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件 I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coredump/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coredump 全过程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    perf 与火焰图
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    perf 与火焰图
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、整体流程概览
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、perf 是什么
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、perf 是什么">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 架构总览
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 安装
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、perf record — 采样阶段
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、perf record — 采样阶段">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 基本用法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 采样原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-vs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 采样频率 vs 采样周期
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-g" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 调用栈回溯方式（-g 的模式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 常用事件类型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-perfdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 perf.data 文件格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、perf script — 文本化采样数据
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、perf script — 文本化采样数据">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 基本用法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 符号解析
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 有用的过滤选项
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stackcollapse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、栈折叠 — stackcollapse
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、栈折叠 — stackcollapse">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 为什么需要折叠
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 折叠过程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 使用方法
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flamegraphpl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、flamegraph.pl — 生成火焰图
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、flamegraph.pl — 生成火焰图">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 获取工具
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 完整命令链
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-flamegraphpl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 flamegraph.pl 的工作原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 常用参数
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 如何阅读火焰图
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、完整实战示例
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="七、完整实战示例">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-cpu-profiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 一次完整的 CPU profiling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-off-cpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Off-CPU 分析（等待时间分析）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 差分火焰图（对比两次采样）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、特殊场景处理
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="八、特殊场景处理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Java 应用
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-nodejs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Node.js
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 内核态分析
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 容器内采样
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf_event_open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        九、perf_event_open 系统调用详解
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十、权限与安全
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="十、权限与安全">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-perf_event_paranoid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 perf_event_paranoid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-cap_perfmon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 CAP_PERFMON
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十一、常见问题排查
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="十一、常见问题排查">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-unknown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 1：火焰图中大量 [unknown]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-1-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 2：调用栈只有 1-2 层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3perf-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 3：perf record 报权限错误
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4perfdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 4：perf.data 文件过大
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 5：火焰图是空的或只有一条栈
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十二、进阶工具与替代方案
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十三、速查：从零到火焰图
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、整体流程概览
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、perf 是什么
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、perf 是什么">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 架构总览
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 安装
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、perf record — 采样阶段
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、perf record — 采样阶段">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 基本用法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 采样原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-vs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 采样频率 vs 采样周期
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-g" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 调用栈回溯方式（-g 的模式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 常用事件类型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-perfdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 perf.data 文件格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、perf script — 文本化采样数据
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、perf script — 文本化采样数据">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 基本用法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 符号解析
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 有用的过滤选项
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stackcollapse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、栈折叠 — stackcollapse
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、栈折叠 — stackcollapse">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 为什么需要折叠
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 折叠过程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 使用方法
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flamegraphpl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、flamegraph.pl — 生成火焰图
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、flamegraph.pl — 生成火焰图">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 获取工具
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 完整命令链
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-flamegraphpl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 flamegraph.pl 的工作原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 常用参数
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 如何阅读火焰图
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、完整实战示例
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="七、完整实战示例">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-cpu-profiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 一次完整的 CPU profiling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-off-cpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Off-CPU 分析（等待时间分析）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 差分火焰图（对比两次采样）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、特殊场景处理
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="八、特殊场景处理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Java 应用
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-nodejs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Node.js
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 内核态分析
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 容器内采样
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perf_event_open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        九、perf_event_open 系统调用详解
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十、权限与安全
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="十、权限与安全">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-perf_event_paranoid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 perf_event_paranoid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-cap_perfmon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 CAP_PERFMON
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十一、常见问题排查
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="十一、常见问题排查">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-unknown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 1：火焰图中大量 [unknown]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-1-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 2：调用栈只有 1-2 层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3perf-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 3：perf record 报权限错误
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4perfdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 4：perf.data 文件过大
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 5：火焰图是空的或只有一条栈
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十二、进阶工具与替代方案
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十三、速查：从零到火焰图
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="linux-perf">Linux perf 到火焰图：全流程与细节<a class="headerlink" href="#linux-perf" title="Permanent link">&para;</a></h1>
+<h2 id="_1">一、整体流程概览<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>从性能采样到最终可视化，完整链路如下：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>perf record  →  perf.data  →  perf script  →  折叠栈  →  flamegraph.pl  →  SVG
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  (采样)        (二进制)       (文本化)       (stackcollapse)   (生成图)     (交互式)
+</span></code></pre></div>
+<p>每一步都有大量细节，下面逐一拆解。</p>
+<hr />
+<h2 id="perf">二、perf 是什么<a class="headerlink" href="#perf" title="Permanent link">&para;</a></h2>
+<p><code>perf</code> 是 Linux 内核自带的性能分析工具，源码位于内核树 <code>tools/perf/</code>。它利用内核的 <strong>perf_events</strong> 子系统，通过硬件 PMU（Performance Monitoring Unit）和软件计数器来采集性能数据。</p>
+<h3 id="21">2.1 架构总览<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>用户态                          内核态                        硬件
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>┌──────────┐    syscall     ┌──────────────────┐      ┌──────────┐
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│ perf 命令 │ ──────────── → │  perf_events 子系统 │ ← ── │ PMU 硬件  │
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│          │  perf_event_  │                  │      │ (计数器)  │
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│          │  open()       │  ring buffer      │      └──────────┘
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│          │ ← ────────── │  (per-CPU)        │
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│  mmap    │  读取采样数据  │                  │
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│ perf.data│               └──────────────────┘
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>└──────────┘
+</span></code></pre></div>
+<h3 id="22">2.2 安装<a class="headerlink" href="#22" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Debian/Ubuntu</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>linux-tools-common<span class="w"> </span>linux-tools-<span class="k">$(</span>uname<span class="w"> </span>-r<span class="k">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># RHEL/CentOS</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>perf
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># 验证</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>perf<span class="w"> </span>version
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">内核版本必须匹配</p>
+<p><code>perf</code> 工具版本必须与当前运行的内核版本一致。如果内核升级后没有更新 <code>linux-tools</code> 包，<code>perf</code> 会报错。</p>
+</div>
+<hr />
+<h2 id="perf-record">三、perf record — 采样阶段<a class="headerlink" href="#perf-record" title="Permanent link">&para;</a></h2>
+<h3 id="31">3.1 基本用法<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 对指定命令采样</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>perf<span class="w"> </span>record<span class="w"> </span>-g<span class="w"> </span>./myapp
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># 对运行中的进程采样 30 秒</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>perf<span class="w"> </span>record<span class="w"> </span>-g<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># 全系统采样</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>perf<span class="w"> </span>record<span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">10</span>
+</span></code></pre></div>
+<p><code>-g</code> 是关键参数，表示 <strong>记录调用栈</strong>（call graph），没有它就无法生成火焰图。</p>
+<h3 id="32">3.2 采样原理<a class="headerlink" href="#32" title="Permanent link">&para;</a></h3>
+<p><code>perf record</code> 默认使用 <strong>CPU cycles</strong> 事件进行采样。核心机制：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>1. perf_event_open() 系统调用
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>   → 内核为目标进程/CPU 创建一个 perf_event
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>   → 配置 PMU 硬件计数器，设定 overflow 阈值（采样周期）
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>2. CPU 执行指令时，硬件计数器递增
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>   → 计数器溢出时触发 PMI（Performance Monitoring Interrupt）
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>   → 内核 NMI handler 被调用
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>3. NMI handler 中：
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>   → 记录当前 RIP（指令指针）
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>   → 回溯调用栈（根据 -g 的方式：fp / dwarf / lbr）
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>   → 将采样数据写入 per-CPU 的 ring buffer
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>4. perf 用户态进程通过 mmap 读取 ring buffer
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>   → 写入 perf.data 文件
+</span></code></pre></div>
+<h3 id="33-vs">3.3 采样频率 vs 采样周期<a class="headerlink" href="#33-vs" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># 按频率采样（默认 4000 Hz，即每秒 ~4000 个样本）</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>-g<span class="w"> </span>./myapp<span class="w">      </span><span class="c1"># 99 Hz，常用值（避开 100 Hz 时钟对齐）</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># 按事件次数采样（每 N 次事件采一次）</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>perf<span class="w"> </span>record<span class="w"> </span>-c<span class="w"> </span><span class="m">100000</span><span class="w"> </span>-g<span class="w"> </span>./myapp<span class="w">  </span><span class="c1"># 每 10 万个 cycles 采一次</span>
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">为什么推荐 99 Hz 而不是 100 Hz</p>
+<p>如果采样频率恰好是 timer 中断频率的倍数（如 100 Hz 对 100 Hz HZ），每次采样都会落在相同的代码路径上（timer 处理），造成 <strong>lockstep 偏差</strong>。使用 99 Hz 这样的奇数可以避免。</p>
+</div>
+<h3 id="34-g">3.4 调用栈回溯方式（<code>-g</code> 的模式）<a class="headerlink" href="#34-g" title="Permanent link">&para;</a></h3>
+<p>这是影响火焰图质量最关键的选项：</p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>参数</th>
+<th>原理</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frame Pointer</td>
+<td><code>--call-graph fp</code></td>
+<td>沿 RBP 链回溯</td>
+<td>开销最低</td>
+<td>需 <code>-fno-omit-frame-pointer</code> 编译；现代编译器默认省略 FP</td>
+</tr>
+<tr>
+<td>DWARF</td>
+<td><code>--call-graph dwarf</code></td>
+<td>记录栈顶 N 字节，事后用 DWARF 信息回溯</td>
+<td>不需要 FP；最准确</td>
+<td>采样数据量大（默认拷贝 8192 字节栈）</td>
+</tr>
+<tr>
+<td>LBR</td>
+<td><code>--call-graph lbr</code></td>
+<td>利用 CPU 的 Last Branch Record 硬件</td>
+<td>开销极低；不需要 FP</td>
+<td>栈深度有限（通常 8-32 层）；需要 Intel Haswell+</td>
+</tr>
+</tbody>
+</table>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Frame Pointer 模式（需要编译时保留 FP）</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>fp<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># DWARF 模式（推荐通用方案）</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># DWARF 模式 + 指定栈拷贝大小</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>dwarf,16384<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># LBR 模式（Intel CPU 推荐）</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>lbr<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Frame Pointer 是最常见的坑</p>
+<p>如果火焰图中出现大量 <code>[unknown]</code> 或调用栈只有 1-2 层，几乎一定是因为二进制没有 frame pointer。解决方案：</p>
+<ul>
+<li>用 <code>-fno-omit-frame-pointer</code> 重新编译</li>
+<li>改用 <code>--call-graph dwarf</code></li>
+<li>改用 <code>--call-graph lbr</code>（Intel CPU）</li>
+</ul>
+</div>
+<h3 id="35">3.5 常用事件类型<a class="headerlink" href="#35" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 查看所有支持的事件</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>perf<span class="w"> </span>list
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># CPU cycles（默认）— 找 CPU 热点</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>cycles<span class="w"> </span>-g<span class="w"> </span>./myapp
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># 指令数</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>instructions<span class="w"> </span>-g<span class="w"> </span>./myapp
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># cache miss — 找内存瓶颈</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>cache-misses<span class="w"> </span>-g<span class="w"> </span>./myapp
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="c1"># page fault — 找内存分配热点</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>page-faults<span class="w"> </span>-g<span class="w"> </span>./myapp
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="c1"># 软件事件 — 上下文切换</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>context-switches<span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">10</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="c1"># 多事件同时采样</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>cycles,cache-misses<span class="w"> </span>-g<span class="w"> </span>./myapp
+</span></code></pre></div>
+<h3 id="36-perfdata">3.6 perf.data 文件格式<a class="headerlink" href="#36-perfdata" title="Permanent link">&para;</a></h3>
+<p><code>perf record</code> 的输出是二进制文件 <code>perf.data</code>，内部结构：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>┌─────────────────────┐
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>│      File Header    │  magic, 版本, 数据偏移, 属性偏移
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>├─────────────────────┤
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>│   Attribute Section │  采样配置（事件类型、频率、调用栈模式等）
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>├─────────────────────┤
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>│    Data Section     │  采样记录流（按时间排序）
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>│  ┌────────────────┐ │
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>│  │ PERF_RECORD_    │ │
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>│  │ SAMPLE          │ │  → IP, TID, 时间戳, 调用栈, CPU, 权重...
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>│  ├────────────────┤ │
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>│  │ PERF_RECORD_    │ │
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>│  │ MMAP2           │ │  → 进程内存映射（用于地址→符号解析）
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>│  ├────────────────┤ │
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>│  │ PERF_RECORD_    │ │
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>│  │ COMM            │ │  → 进程/线程命名
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>│  ├────────────────┤ │
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>│  │ ...             │ │
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>│  └────────────────┘ │
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>├─────────────────────┤
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>│  Feature Section    │  构建 ID、主机名、CPU 拓扑、cmdline 等元数据
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>└─────────────────────┘
+</span></code></pre></div>
+<p>关键记录类型：</p>
+<table>
+<thead>
+<tr>
+<th>记录类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PERF_RECORD_SAMPLE</code></td>
+<td>核心采样数据：IP、调用栈、时间戳</td>
+</tr>
+<tr>
+<td><code>PERF_RECORD_MMAP2</code></td>
+<td>进程加载的 ELF 文件映射，用于符号解析</td>
+</tr>
+<tr>
+<td><code>PERF_RECORD_COMM</code></td>
+<td>进程/线程名变更</td>
+</tr>
+<tr>
+<td><code>PERF_RECORD_FORK</code> / <code>EXIT</code></td>
+<td>进程创建/退出</td>
+</tr>
+<tr>
+<td><code>PERF_RECORD_SWITCH</code></td>
+<td>上下文切换（如果启用）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="perf-script">四、perf script — 文本化采样数据<a class="headerlink" href="#perf-script" title="Permanent link">&para;</a></h2>
+<h3 id="41">4.1 基本用法<a class="headerlink" href="#41" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 将 perf.data 转为人类可读的文本</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>perf<span class="w"> </span>script<span class="w"> </span>&gt;<span class="w"> </span>out.perf
+</span></code></pre></div>
+<p>输出格式示例：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>myapp  12345 [003] 12345.678901:     250000 cycles:
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>        aaaaaaaa1234 compute_hash+0x14 (/usr/bin/myapp)
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>        aaaaaaaa5678 process_request+0x88 (/usr/bin/myapp)
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>        aaaaaaaa9abc handle_connection+0x120 (/usr/bin/myapp)
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>        aaaaaaaade00 main+0x200 (/usr/bin/myapp)
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        7f1234567890 __libc_start_main+0xf0 (/usr/lib/libc.so.6)
+</span></code></pre></div>
+<p>每个采样块包含：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>进程名  TID [CPU] 时间戳:  事件计数 事件名:
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>        地址 符号+偏移 (DSO 路径)      ← 调用栈（从栈顶到栈底）
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        地址 符号+偏移 (DSO 路径)
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        ...
+</span></code></pre></div>
+<h3 id="42">4.2 符号解析<a class="headerlink" href="#42" title="Permanent link">&para;</a></h3>
+<p><code>perf script</code> 需要将采样中的原始地址解析为函数名。解析依赖：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>地址 → 查 MMAP2 记录确定所属 DSO → 查 DSO 的符号表/DWARF → 函数名
+</span></code></pre></div>
+<p><strong>符号来源优先级：</strong></p>
+<ol>
+<li>二进制文件自身的 <code>.symtab</code> / <code>.dynsym</code> 段</li>
+<li>独立的 debuginfo 文件（<code>/usr/lib/debug/...</code>）</li>
+<li>Build ID 对应的 debuginfo（<code>~/.debug/</code> 或 debuginfod）</li>
+<li><code>/proc/&lt;pid&gt;/maps</code>（仅用于确定 DSO，不含符号）</li>
+<li>内核符号：<code>/proc/kallsyms</code></li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># 安装 debuginfo（用于解析系统库）</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># Debian/Ubuntu</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>libc6-dbg
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># RHEL/CentOS</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>sudo<span class="w"> </span>debuginfo-install<span class="w"> </span>glibc
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="c1"># 使用 debuginfod（自动下载 debuginfo，推荐）</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DEBUGINFOD_URLS</span><span class="o">=</span><span class="s2">&quot;https://debuginfod.elfutils.org/&quot;</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">符号丢失的常见原因</p>
+<ul>
+<li><strong>二进制被 <code>strip</code> 过</strong>：没有 <code>.symtab</code>，需要安装对应的 <code>-dbg</code> / <code>-debuginfo</code> 包</li>
+<li><strong>JIT 编译的代码</strong>（Java、Node.js、Python）：地址不在任何 DSO 中，需要特殊处理（见第八节）</li>
+<li><strong>内核符号缺失</strong>：确保 <code>/proc/kallsyms</code> 可读（<code>kernel.kptr_restrict=0</code>）</li>
+<li><strong>采样时和分析时的二进制不同</strong>：Build ID 不匹配</li>
+</ul>
+</div>
+<h3 id="43">4.3 有用的过滤选项<a class="headerlink" href="#43" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 只输出指定进程名</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>perf<span class="w"> </span>script<span class="w"> </span>--comm<span class="w"> </span>myapp
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># 只输出指定 TID</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>perf<span class="w"> </span>script<span class="w"> </span>--tid<span class="w"> </span><span class="m">12345</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="c1"># 只输出指定时间范围</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>perf<span class="w"> </span>script<span class="w"> </span>--time<span class="w"> </span><span class="m">10</span>%/5<span class="w">     </span><span class="c1"># 第 5 个 10% 时间段</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="c1"># 自定义输出字段</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>perf<span class="w"> </span>script<span class="w"> </span>-F<span class="w"> </span>comm,tid,time,event,ip,sym,dso,trace
+</span></code></pre></div>
+<hr />
+<h2 id="stackcollapse">五、栈折叠 — stackcollapse<a class="headerlink" href="#stackcollapse" title="Permanent link">&para;</a></h2>
+<h3 id="51">5.1 为什么需要折叠<a class="headerlink" href="#51" title="Permanent link">&para;</a></h3>
+<p><code>perf script</code> 的输出是<strong>每个采样一块多行文本</strong>，而火焰图工具需要的输入格式是<strong>每行一个唯一调用栈 + 出现次数</strong>。<code>stackcollapse-perf.pl</code> 完成这个转换。</p>
+<h3 id="52">5.2 折叠过程<a class="headerlink" href="#52" title="Permanent link">&para;</a></h3>
+<p>输入（<code>perf script</code> 输出）：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>myapp 12345 cycles:
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    compute_hash
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    process_request
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    main
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>myapp 12345 cycles:
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    compute_hash
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    process_request
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    main
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>myapp 12345 cycles:
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    read_config
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>    main
+</span></code></pre></div>
+<p>经过 <code>stackcollapse-perf.pl</code>：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>myapp;main;process_request;compute_hash 2
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>myapp;main;read_config 1
+</span></code></pre></div>
+<p><strong>转换规则：</strong></p>
+<ol>
+<li>将调用栈从底到顶翻转（栈底在左，栈顶在右），用 <code>;</code> 连接</li>
+<li>相同的完整调用栈合并，计数累加</li>
+<li>进程名作为栈的最左端（root）</li>
+</ol>
+<h3 id="53">5.3 使用方法<a class="headerlink" href="#53" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># 基本用法</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>&gt;<span class="w"> </span>out.folded
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># 包含进程名（默认包含）</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>--all<span class="w"> </span>&gt;<span class="w"> </span>out.folded
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># 只包含内核栈</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>--kernel<span class="w"> </span>&gt;<span class="w"> </span>out.folded
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="c1"># 只包含用户态栈</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>--jit<span class="w"> </span>&gt;<span class="w"> </span>out.folded
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="c1"># 内联函数展开（如果有 DWARF 信息）</span>
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>--inline<span class="w"> </span>&gt;<span class="w"> </span>out.folded
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">也可以用 perf 内置功能跳过这一步</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># perf 较新版本支持直接输出折叠格式</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>perf<span class="w"> </span>script<span class="w"> </span>-s<span class="w"> </span>stackcollapse.py
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="c1"># 或使用 --flamegraph（部分版本）</span>
+</span></code></pre></div>
+</div>
+<hr />
+<h2 id="flamegraphpl">六、flamegraph.pl — 生成火焰图<a class="headerlink" href="#flamegraphpl" title="Permanent link">&para;</a></h2>
+<h3 id="61">6.1 获取工具<a class="headerlink" href="#61" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/brendangregg/FlameGraph.git
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nb">cd</span><span class="w"> </span>FlameGraph
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># 主要脚本：</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1">#   stackcollapse-perf.pl  — 折叠 perf 输出</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="c1">#   flamegraph.pl          — 生成 SVG</span>
+</span></code></pre></div>
+<h3 id="62">6.2 完整命令链<a class="headerlink" href="#62" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># 标准流程（三步管道）</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>./stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span>./flamegraph.pl<span class="w"> </span>&gt;<span class="w"> </span>flamegraph.svg
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># 一步到位（从 perf.data 到 SVG）</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>perf<span class="w"> </span>script<span class="w"> </span>-i<span class="w"> </span>perf.data<span class="w"> </span><span class="p">|</span><span class="w"> </span>./stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span>./flamegraph.pl<span class="w"> </span>&gt;<span class="w"> </span>flamegraph.svg
+</span></code></pre></div>
+<h3 id="63-flamegraphpl">6.3 flamegraph.pl 的工作原理<a class="headerlink" href="#63-flamegraphpl" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>读取折叠栈文本
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>│
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>├── 1. 解析每行：按 `;` 分割栈帧，获取计数
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>│
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>├── 2. 构建栈帧树（trie）
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>│     root
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>│     ├── main (3)
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>│     │   ├── process_request (2)
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>│     │   │   └── compute_hash (2)
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>│     │   └── read_config (1)
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>│
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>├── 3. 计算每个栈帧的宽度
+</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>│     宽度 = 该帧（含所有子帧）的采样总数 / 全局采样总数 × 图宽
+</span><span id="__span-21-14"><a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>│
+</span><span id="__span-21-15"><a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>├── 4. 深度优先遍历，为每个栈帧生成 SVG 矩形
+</span><span id="__span-21-16"><a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a>│     x 坐标：同一层级的帧按字母序排列（不是按时间！）
+</span><span id="__span-21-17"><a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>│     y 坐标：栈深度（从下到上）
+</span><span id="__span-21-18"><a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a>│     宽度：按采样比例
+</span><span id="__span-21-19"><a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a>│     颜色：根据函数名 hash 或类型分配
+</span><span id="__span-21-20"><a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a>│
+</span><span id="__span-21-21"><a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a>└── 5. 输出 SVG（内嵌 JavaScript 实现交互）
+</span></code></pre></div>
+<h3 id="64">6.4 常用参数<a class="headerlink" href="#64" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># 设置标题</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>flamegraph.pl<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;MyApp CPU Profile&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>out.svg
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># 设置颜色方案</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>flamegraph.pl<span class="w"> </span>--color<span class="w"> </span>java<span class="w">    </span><span class="c1"># Java 配色（绿=Java，黄=C/C++，红=内核）</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>flamegraph.pl<span class="w"> </span>--color<span class="w"> </span>mem<span class="w">     </span><span class="c1"># 内存配色</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>flamegraph.pl<span class="w"> </span>--color<span class="w"> </span>io<span class="w">      </span><span class="c1"># I/O 配色</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="c1"># 反转火焰图（icicle graph，从上往下看）</span>
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>flamegraph.pl<span class="w"> </span>--inverted<span class="w"> </span>&gt;<span class="w"> </span>out.svg
+</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>
+</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="c1"># 设置最小显示宽度（过滤太窄的帧）</span>
+</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>flamegraph.pl<span class="w"> </span>--minwidth<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>&gt;<span class="w"> </span>out.svg
+</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>
+</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a><span class="c1"># 设置图片宽度</span>
+</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>flamegraph.pl<span class="w"> </span>--width<span class="w"> </span><span class="m">1600</span><span class="w"> </span>&gt;<span class="w"> </span>out.svg
+</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>
+</span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a><span class="c1"># 计数类型标签（显示在详情中）</span>
+</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a>flamegraph.pl<span class="w"> </span>--countname<span class="w"> </span><span class="s2">&quot;samples&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>out.svg
+</span><span id="__span-22-20"><a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a>
+</span><span id="__span-22-21"><a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a><span class="c1"># 反转栈顺序（适合查看 &quot;谁调用了这个函数&quot;）</span>
+</span><span id="__span-22-22"><a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a>flamegraph.pl<span class="w"> </span>--reverse<span class="w"> </span>&gt;<span class="w"> </span>out.svg
+</span></code></pre></div>
+<h3 id="65">6.5 如何阅读火焰图<a class="headerlink" href="#65" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>                    ┌──────┐
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>                    │ func_d│  ← 采样最多命中的叶子函数（CPU 热点）
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>              ┌─────┴──────┴─────┐
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>              │     func_b       │
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>        ┌─────┴──────────────────┴───────┐
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>        │           func_a               │
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>   ┌────┴────────────────────────────────┴────┐
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>   │                main                      │
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>   └──────────────────────────────────────────┘
+</span></code></pre></div>
+<p><strong>核心规则：</strong></p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Y 轴</strong>（高度）</td>
+<td>调用栈深度。底部是栈底（<code>main</code>），顶部是栈顶（实际执行的函数）</td>
+</tr>
+<tr>
+<td><strong>X 轴</strong>（宽度）</td>
+<td>采样数量的比例。<strong>不是时间线</strong>，同层帧按字母序排列</td>
+</tr>
+<tr>
+<td><strong>帧宽度</strong></td>
+<td>该函数（含其调用的所有子函数）占 CPU 时间的比例</td>
+</tr>
+<tr>
+<td><strong>帧颜色</strong></td>
+<td>无特殊含义（随机或按类型），用于视觉区分</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关注点：</strong></p>
+<ul>
+<li><strong>顶部的宽帧</strong>（"plateaus"）= 直接消耗 CPU 最多的函数</li>
+<li><strong>底部的宽帧</strong> = 调用路径入口，本身不一定慢，但其调用的子树占比大</li>
+<li><strong>窄帧</strong> = 不值得优化（占比太小）</li>
+</ul>
+<p><strong>交互功能（SVG 内嵌）：</strong></p>
+<ul>
+<li><strong>点击</strong> 某帧 → 放大该子树（zoom）</li>
+<li><strong>鼠标悬停</strong> → 显示函数名、采样数和百分比</li>
+<li><strong>Ctrl+F / 搜索</strong> → 高亮匹配的函数，显示累计占比</li>
+</ul>
+<hr />
+<h2 id="_2">七、完整实战示例<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="71-cpu-profiling">7.1 一次完整的 CPU profiling<a class="headerlink" href="#71-cpu-profiling" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># 1. 采样（99 Hz，DWARF 回溯，30 秒）</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>sudo<span class="w"> </span>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-p<span class="w"> </span><span class="k">$(</span>pgrep<span class="w"> </span>myapp<span class="k">)</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># 2. 查看采样统计</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>perf<span class="w"> </span>report<span class="w"> </span>--stdio<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-40
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="c1"># 3. 生成火焰图</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span>flamegraph.pl<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">  </span>--title<span class="w"> </span><span class="s2">&quot;myapp CPU flame graph&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">  </span>--subtitle<span class="w"> </span><span class="s2">&quot;30s sample at 99Hz&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">  </span>&gt;<span class="w"> </span>cpu_flamegraph.svg
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>
+</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="c1"># 4. 在浏览器中打开</span>
+</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>xdg-open<span class="w"> </span>cpu_flamegraph.svg<span class="w">   </span><span class="c1"># Linux</span>
+</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="c1"># open cpu_flamegraph.svg     # macOS</span>
+</span></code></pre></div>
+<h3 id="72-off-cpu">7.2 Off-CPU 分析（等待时间分析）<a class="headerlink" href="#72-off-cpu" title="Permanent link">&para;</a></h3>
+<p>常规火焰图只能看到 <strong>on-CPU</strong> 的热点。如果程序慢是因为等 I/O、锁、sleep，需要 off-CPU 分析：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># 记录调度事件</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>sudo<span class="w"> </span>perf<span class="w"> </span>record<span class="w"> </span>-e<span class="w"> </span>sched:sched_switch<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-p<span class="w"> </span><span class="k">$(</span>pgrep<span class="w"> </span>myapp<span class="k">)</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="c1"># 生成 off-CPU 火焰图（需要特殊的 stackcollapse 脚本处理时间差）</span>
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span>flamegraph.pl<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="w">  </span>--title<span class="w"> </span><span class="s2">&quot;Off-CPU flame graph&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">  </span>--color<span class="w"> </span>io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">  </span>--countname<span class="w"> </span><span class="s2">&quot;us&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">  </span>&gt;<span class="w"> </span>offcpu_flamegraph.svg
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">更完善的 Off-CPU 方案</p>
+<p>Brendan Gregg 的 <a href="https://github.com/iovisor/bcc">bcc/BPF 工具集</a> 中的 <code>offcputime</code> 提供了更精确的 off-CPU 分析，它直接在内核中计算阻塞时间，不会像 <code>sched_switch</code> 事件那样产生大量数据。</p>
+</div>
+<h3 id="73">7.3 差分火焰图（对比两次采样）<a class="headerlink" href="#73" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># 优化前采样</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-o<span class="w"> </span>before.data<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>perf<span class="w"> </span>script<span class="w"> </span>-i<span class="w"> </span>before.data<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>&gt;<span class="w"> </span>before.folded
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="c1"># 优化后采样</span>
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-o<span class="w"> </span>after.data<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>perf<span class="w"> </span>script<span class="w"> </span>-i<span class="w"> </span>after.data<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span>&gt;<span class="w"> </span>after.folded
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a><span class="c1"># 生成差分火焰图（红=增加，蓝=减少）</span>
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>difffolded.pl<span class="w"> </span>before.folded<span class="w"> </span>after.folded<span class="w"> </span><span class="p">|</span><span class="w"> </span>flamegraph.pl<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="w">  </span>--title<span class="w"> </span><span class="s2">&quot;Differential flame graph&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="w">  </span>--negate<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="w">  </span>&gt;<span class="w"> </span>diff_flamegraph.svg
+</span></code></pre></div>
+<hr />
+<h2 id="_3">八、特殊场景处理<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h3 id="81-java">8.1 Java 应用<a class="headerlink" href="#81-java" title="Permanent link">&para;</a></h3>
+<p>Java 代码由 JIT 编译，地址不在任何 ELF 文件中，perf 默认无法解析符号。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># 方法 1：使用 perf-map-agent（JDK 8-11）</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="c1"># 让 JVM 生成 /tmp/perf-&lt;pid&gt;.map 符号映射文件</span>
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>java<span class="w"> </span>-XX:+PreserveFramePointers<span class="w"> </span>-jar<span class="w"> </span>myapp.jar<span class="w"> </span><span class="p">&amp;</span>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="c1"># 采样</span>
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>--call-graph<span class="w"> </span>fp<span class="w"> </span>-p<span class="w"> </span><span class="k">$(</span>pgrep<span class="w"> </span>java<span class="k">)</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="c1"># 生成 map 文件</span>
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>create-java-perf-map.sh<span class="w"> </span><span class="k">$(</span>pgrep<span class="w"> </span>java<span class="k">)</span>
+</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="c1"># 生成火焰图</span>
+</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span>flamegraph.pl<span class="w"> </span>--color<span class="w"> </span>java<span class="w"> </span>&gt;<span class="w"> </span>java_flame.svg
+</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>
+</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="c1"># 方法 2：async-profiler（推荐，JDK 8+，无需 FP）</span>
+</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>./profiler.sh<span class="w"> </span>-d<span class="w"> </span><span class="m">30</span><span class="w"> </span>-f<span class="w"> </span>flamegraph.html<span class="w"> </span>&lt;pid&gt;
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">async-profiler</p>
+<p><a href="https://github.com/async-profiler/async-profiler">async-profiler</a> 是 Java 火焰图的最佳工具。它同时采样 Java 栈和 native 栈，不需要 <code>-XX:+PreserveFramePointers</code>，也不需要 <code>perf</code>。直接输出火焰图 HTML。</p>
+</div>
+<h3 id="82-nodejs">8.2 Node.js<a class="headerlink" href="#82-nodejs" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># 启动时启用 perf 支持</span>
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>node<span class="w"> </span>--perf-basic-prof<span class="w"> </span>myapp.js<span class="w"> </span><span class="p">&amp;</span>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1"># 这会生成 /tmp/perf-&lt;pid&gt;.map</span>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="c1"># 然后正常用 perf record + 火焰图流程</span>
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="c1"># 或使用 0x（更简单）</span>
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>npx<span class="w"> </span>0x<span class="w"> </span>myapp.js
+</span></code></pre></div>
+<h3 id="83-python">8.3 Python<a class="headerlink" href="#83-python" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># 使用 py-spy（推荐，无需修改代码）</span>
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>pip<span class="w"> </span>install<span class="w"> </span>py-spy
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>py-spy<span class="w"> </span>record<span class="w"> </span>-o<span class="w"> </span>profile.svg<span class="w"> </span>--pid<span class="w"> </span>&lt;pid&gt;
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="c1"># 使用 perf + Python 符号支持</span>
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>python3<span class="w"> </span>-X<span class="w"> </span>perf<span class="w"> </span>myapp.py<span class="w"> </span><span class="p">&amp;</span><span class="w">   </span><span class="c1"># Python 3.12+ 内置支持</span>
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span></code></pre></div>
+<h3 id="84">8.4 内核态分析<a class="headerlink" href="#84" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1"># 采样内核态（需要 root）</span>
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>sudo<span class="w"> </span>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">10</span>
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="c1"># 确保内核符号可读</span>
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>kernel.kptr_restrict<span class="o">=</span><span class="m">0</span>
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>kernel.perf_event_paranoid<span class="o">=</span>-1
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="c1"># 生成火焰图（区分内核/用户态颜色）</span>
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>sudo<span class="w"> </span>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span>stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span>flamegraph.pl<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">  </span>--color<span class="w"> </span>kernel<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="w">  </span>--title<span class="w"> </span><span class="s2">&quot;Kernel CPU flame graph&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w">  </span>&gt;<span class="w"> </span>kernel_flame.svg
+</span></code></pre></div>
+<h3 id="85">8.5 容器内采样<a class="headerlink" href="#85" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># 方案 1：从宿主机采样容器进程</span>
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="c1"># 找到容器内进程在宿主机的 PID</span>
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="nv">PID</span><span class="o">=</span><span class="k">$(</span>docker<span class="w"> </span>inspect<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{.State.Pid}}&#39;</span><span class="w"> </span>&lt;container&gt;<span class="k">)</span>
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>sudo<span class="w"> </span>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">99</span><span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-p<span class="w"> </span><span class="nv">$PID</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">30</span>
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="c1"># 方案 2：容器内运行 perf（需要特权）</span>
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>docker<span class="w"> </span>run<span class="w"> </span>--privileged<span class="w"> </span>--pid<span class="o">=</span>host<span class="w"> </span>...
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="c1"># 或</span>
+</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>docker<span class="w"> </span>run<span class="w"> </span>--cap-add<span class="w"> </span>SYS_ADMIN<span class="w"> </span>--cap-add<span class="w"> </span>SYS_PTRACE<span class="w"> </span>...
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">容器内符号解析</p>
+<p>在宿主机采样时，perf 需要访问容器内的二进制文件来解析符号。可以用 <code>--symfs</code> 指定根文件系统路径：
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>perf<span class="w"> </span>script<span class="w"> </span>--symfs<span class="w"> </span>/proc/&lt;pid&gt;/root/
+</span></code></pre></div></p>
+</div>
+<hr />
+<h2 id="perf_event_open">九、perf_event_open 系统调用详解<a class="headerlink" href="#perf_event_open" title="Permanent link">&para;</a></h2>
+<p>这是 perf 的核心系统调用，理解它有助于理解整个采样机制。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="kt">int</span><span class="w"> </span><span class="nf">perf_event_open</span><span class="p">(</span>
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">perf_event_attr</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w">  </span><span class="c1">// 事件配置</span>
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">    </span><span class="kt">pid_t</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w">                      </span><span class="c1">// 目标进程（-1 = 所有进程）</span>
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">cpu</span><span class="p">,</span><span class="w">                        </span><span class="c1">// 目标 CPU（-1 = 所有 CPU）</span>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">group_fd</span><span class="p">,</span><span class="w">                   </span><span class="c1">// 事件组（-1 = 独立）</span>
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="w">             </span><span class="c1">// PERF_FLAG_FD_CLOEXEC 等</span>
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="p">);</span>
+</span></code></pre></div>
+<p><code>perf_event_attr</code> 中的关键字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>事件类型：<code>PERF_TYPE_HARDWARE</code>、<code>PERF_TYPE_SOFTWARE</code>、<code>PERF_TYPE_TRACEPOINT</code></td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>具体事件：<code>PERF_COUNT_HW_CPU_CYCLES</code>、<code>PERF_COUNT_HW_CACHE_MISSES</code></td>
+</tr>
+<tr>
+<td><code>sample_period</code> / <code>sample_freq</code></td>
+<td>采样周期或频率</td>
+</tr>
+<tr>
+<td><code>sample_type</code></td>
+<td>每个样本包含什么：<code>PERF_SAMPLE_IP | PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_TID | PERF_SAMPLE_TIME</code></td>
+</tr>
+<tr>
+<td><code>read_format</code></td>
+<td>读取计数器时的格式</td>
+</tr>
+<tr>
+<td><code>freq</code></td>
+<td>1 = 使用频率模式，0 = 使用周期模式</td>
+</tr>
+</tbody>
+</table>
+<p>Ring buffer 交互：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>perf_event_open() 返回 fd
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>    → mmap(fd, ...) 映射 ring buffer 到用户态
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>    → 内核写入采样数据到 ring buffer
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>    → 用户态 perf 进程通过 poll(fd) 等待通知
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>    → 读取 ring buffer 中的 perf_event_header + 数据
+</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>    → 写入 perf.data
+</span></code></pre></div>
+<hr />
+<h2 id="_4">十、权限与安全<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<h3 id="101-perf_event_paranoid">10.1 <code>perf_event_paranoid</code><a class="headerlink" href="#101-perf_event_paranoid" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>cat<span class="w"> </span>/proc/sys/kernel/perf_event_paranoid
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>权限</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-1</code></td>
+<td>不限制（允许所有用户访问所有事件）</td>
+</tr>
+<tr>
+<td><code>0</code></td>
+<td>允许非 root 访问非内核态事件</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>允许非 root 进行受限的用户态采样（默认）</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>只允许非 root 使用用户态软件事件</td>
+</tr>
+<tr>
+<td><code>3+</code></td>
+<td>非 root 完全禁止（部分发行版，如 Debian）</td>
+</tr>
+</tbody>
+</table>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="c1"># 临时放宽（用于调试）</span>
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>kernel.perf_event_paranoid<span class="o">=</span>-1
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>
+</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="c1"># 永久设置</span>
+</span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;kernel.perf_event_paranoid=-1&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/sysctl.d/99-perf.conf
+</span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>--system
+</span></code></pre></div>
+<h3 id="102-cap_perfmon">10.2 CAP_PERFMON<a class="headerlink" href="#102-cap_perfmon" title="Permanent link">&para;</a></h3>
+<p>Linux 5.8+ 引入了 <code>CAP_PERFMON</code> capability，可以更细粒度地授权：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="c1"># 给 perf 二进制添加 capability（比 setuid root 安全）</span>
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>sudo<span class="w"> </span>setcap<span class="w"> </span>cap_perfmon,cap_sys_ptrace+ep<span class="w"> </span><span class="k">$(</span>which<span class="w"> </span>perf<span class="k">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="_5">十一、常见问题排查<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<h3 id="1-unknown">问题 1：火焰图中大量 <code>[unknown]</code><a class="headerlink" href="#1-unknown" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># 检查是否有符号</span>
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>nm<span class="w"> </span>/path/to/binary<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>readelf<span class="w"> </span>-s<span class="w"> </span>/path/to/binary<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>
+</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a><span class="c1"># 如果被 strip 了，安装 debuginfo 包</span>
+</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a><span class="c1"># 或重新编译带 -g</span>
+</span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>
+</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a><span class="c1"># 如果是共享库缺符号</span>
+</span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;no symbols&quot;</span>
+</span><span id="__span-38-10"><a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a><span class="c1"># 安装对应的 -dbg 包</span>
+</span></code></pre></div>
+<h3 id="2-1-2">问题 2：调用栈只有 1-2 层<a class="headerlink" href="#2-1-2" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="c1"># 几乎一定是 frame pointer 缺失</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="c1"># 方案 1：重新编译</span>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="nv">CFLAGS</span><span class="o">=</span><span class="s2">&quot;-fno-omit-frame-pointer&quot;</span><span class="w"> </span>make
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>
+</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="c1"># 方案 2：改用 DWARF</span>
+</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>...
+</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>
+</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a><span class="c1"># 方案 3：改用 LBR（Intel）</span>
+</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>lbr<span class="w"> </span>...
+</span></code></pre></div>
+<h3 id="3perf-record">问题 3：<code>perf record</code> 报权限错误<a class="headerlink" href="#3perf-record" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># 检查 paranoid 级别</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>cat<span class="w"> </span>/proc/sys/kernel/perf_event_paranoid
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
+</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="c1"># 快速解决：用 sudo</span>
+</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>sudo<span class="w"> </span>perf<span class="w"> </span>record<span class="w"> </span>...
+</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>
+</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a><span class="c1"># 长期解决：降低 paranoid 或授权 CAP_PERFMON</span>
+</span></code></pre></div>
+<h3 id="4perfdata">问题 4：perf.data 文件过大<a class="headerlink" href="#4perfdata" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="c1"># 降低采样频率</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="m">49</span><span class="w"> </span>...<span class="w">    </span><span class="c1"># 49 Hz 足够多数场景</span>
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>
+</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="c1"># 缩短采样时间</span>
+</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>perf<span class="w"> </span>record<span class="w"> </span>...<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">10</span>
+</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>
+</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a><span class="c1"># DWARF 模式减小栈拷贝</span>
+</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>perf<span class="w"> </span>record<span class="w"> </span>--call-graph<span class="w"> </span>dwarf,4096<span class="w"> </span>...<span class="w">    </span><span class="c1"># 默认 8192</span>
+</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>
+</span><span id="__span-41-10"><a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a><span class="c1"># 采样后查看大小</span>
+</span><span id="__span-41-11"><a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>ls<span class="w"> </span>-lh<span class="w"> </span>perf.data
+</span></code></pre></div>
+<h3 id="5">问题 5：火焰图是空的或只有一条栈<a class="headerlink" href="#5" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="c1"># 检查采样数</span>
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>perf<span class="w"> </span>report<span class="w"> </span>--stdio<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-5
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="c1"># 如果 &quot;Samples: 0&quot; → 目标进程在采样期间可能没有 CPU 活动</span>
+</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a>
+</span><span id="__span-42-5"><a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="c1"># 检查事件是否正确</span>
+</span><span id="__span-42-6"><a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>perf<span class="w"> </span>stat<span class="w"> </span>-e<span class="w"> </span>cycles<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">5</span>
+</span><span id="__span-42-7"><a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="c1"># 如果 cycles = 0，进程确实没有在跑</span>
+</span></code></pre></div>
+<hr />
+<h2 id="_6">十二、进阶工具与替代方案<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/bpftrace/bpftrace">bpftrace</a></td>
+<td>用 BPF 做自定义 profiling，灵活强大</td>
+</tr>
+<tr>
+<td><a href="https://github.com/async-profiler/async-profiler">async-profiler</a></td>
+<td>Java 最佳 profiling 工具</td>
+</tr>
+<tr>
+<td><a href="https://github.com/benfred/py-spy">py-spy</a></td>
+<td>Python 零侵入 profiler</td>
+</tr>
+<tr>
+<td><a href="https://github.com/google/pprof">pprof</a></td>
+<td>Go 内置 profiler，支持火焰图</td>
+</tr>
+<tr>
+<td><a href="https://www.speedscope.app/">speedscope</a></td>
+<td>现代火焰图查看器，支持多种格式</td>
+</tr>
+<tr>
+<td><a href="https://profiler.firefox.com/">Firefox Profiler</a></td>
+<td>可导入 perf 数据的 Web 查看器</td>
+</tr>
+<tr>
+<td><code>perf report --tui</code></td>
+<td>perf 自带的 TUI 分析界面</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_7">十三、速查：从零到火焰图<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="c1"># 完整的一键脚本</span>
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="nv">PID</span><span class="o">=</span>&lt;your_pid&gt;
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="nv">DURATION</span><span class="o">=</span><span class="m">30</span>
+</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="nv">FREQ</span><span class="o">=</span><span class="m">99</span>
+</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>
+</span><span id="__span-43-6"><a id="__codelineno-43-6" name="__codelineno-43-6" href="#__codelineno-43-6"></a><span class="c1"># 采样</span>
+</span><span id="__span-43-7"><a id="__codelineno-43-7" name="__codelineno-43-7" href="#__codelineno-43-7"></a>sudo<span class="w"> </span>perf<span class="w"> </span>record<span class="w"> </span>-F<span class="w"> </span><span class="nv">$FREQ</span><span class="w"> </span>--call-graph<span class="w"> </span>dwarf<span class="w"> </span>-p<span class="w"> </span><span class="nv">$PID</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="nv">$DURATION</span>
+</span><span id="__span-43-8"><a id="__codelineno-43-8" name="__codelineno-43-8" href="#__codelineno-43-8"></a>
+</span><span id="__span-43-9"><a id="__codelineno-43-9" name="__codelineno-43-9" href="#__codelineno-43-9"></a><span class="c1"># 生成火焰图</span>
+</span><span id="__span-43-10"><a id="__codelineno-43-10" name="__codelineno-43-10" href="#__codelineno-43-10"></a>perf<span class="w"> </span>script<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-43-11"><a id="__codelineno-43-11" name="__codelineno-43-11" href="#__codelineno-43-11"></a><span class="w">  </span>path/to/FlameGraph/stackcollapse-perf.pl<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-43-12"><a id="__codelineno-43-12" name="__codelineno-43-12" href="#__codelineno-43-12"></a><span class="w">  </span>path/to/FlameGraph/flamegraph.pl<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;CPU Profile&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>flame.svg
+</span><span id="__span-43-13"><a id="__codelineno-43-13" name="__codelineno-43-13" href="#__codelineno-43-13"></a>
+</span><span id="__span-43-14"><a id="__codelineno-43-14" name="__codelineno-43-14" href="#__codelineno-43-14"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Done. Open flame.svg in a browser.&quot;</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
