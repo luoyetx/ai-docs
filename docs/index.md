@@ -13,6 +13,7 @@
 ### 基础
 
 - [序列化与反序列化协议](fundamentals/serialization.md) — JSON、Protobuf、Avro 等主流协议的全面对比与选型指南
+- [Vespa SLIME 编解码](fundamentals/slime.md) — 深入 SLIME 二进制格式的编码原理与源码实现
 
 ## 关于
 

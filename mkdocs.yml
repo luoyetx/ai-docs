@@ -44,6 +44,7 @@ nav:
     - perf 与火焰图: linux/perf_flamegraph.md
   - 基础:
     - 序列化协议: fundamentals/serialization.md
+    - Vespa SLIME 编解码: fundamentals/slime.md
 
 markdown_extensions:
   - pymdownx.highlight:
