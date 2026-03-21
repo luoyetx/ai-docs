@@ -10,6 +10,10 @@
 - [Coredump 全过程与细节](linux/coredump.md) — 从信号触发到 ELF core 文件生成的完整链路
 - [perf 到火焰图全流程](linux/perf_flamegraph.md) — 从 perf record 采样到生成交互式火焰图的完整细节
 
+### 基础
+
+- [序列化与反序列化协议](fundamentals/serialization.md) — JSON、Protobuf、Avro 等主流协议的全面对比与选型指南
+
 ## 关于
 
 本站使用 [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) 构建。

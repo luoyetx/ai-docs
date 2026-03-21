@@ -42,6 +42,8 @@ nav:
     - 文件 I/O: linux/file_io.md
     - Coredump 全过程: linux/coredump.md
     - perf 与火焰图: linux/perf_flamegraph.md
+  - 基础:
+    - 序列化协议: fundamentals/serialization.md
 
 markdown_extensions:
   - pymdownx.highlight:
