@@ -1,0 +1,3471 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="技术笔记 - Linux、系统编程、分布式">
+      
+      
+        <meta name="author" content="coder">
+      
+      
+      
+        <link rel="prev" href="../../linux/perf_flamegraph/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>序列化协议 - Tech Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Tech Notes" class="md-header__button md-logo" aria-label="Tech Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tech Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              序列化协议
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../linux/file_io/" class="md-tabs__link">
+          
+  
+  
+  Linux
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  基础
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tech Notes" class="md-nav__button md-logo" aria-label="Tech Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tech Notes
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linux
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Linux
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../linux/file_io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件 I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../linux/coredump/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coredump 全过程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../linux/perf_flamegraph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    perf 与火焰图
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    基础
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    序列化协议
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    序列化协议
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、什么是序列化
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="一、什么是序列化">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 评估维度
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、文本协议
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、文本协议">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-jsonjavascript-object-notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 JSON（JavaScript Object Notation）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 JSON（JavaScript Object Notation）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据类型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-xmlextensible-markup-language" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 XML（eXtensible Markup Language）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 XML（eXtensible Markup Language）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-yamlyaml-aint-markup-language" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 YAML（YAML Ain't Markup Language）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.3 YAML（YAML Ain&#39;t Markup Language）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、二进制协议（Schema-based）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、二进制协议（Schema-based）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-protocol-buffersprotobuf-google" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Protocol Buffers（Protobuf）— Google
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 Protocol Buffers（Protobuf）— Google">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-apache-thrift-facebook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Apache Thrift（原 Facebook）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Apache Thrift（原 Facebook）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        传输协议选项
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-apache-avro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Apache Avro
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.3 Apache Avro">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 演进
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kafka" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 Kafka 的结合
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-free" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、二进制协议（Schema-free）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、二进制协议（Schema-free）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-messagepack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 MessagePack
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 MessagePack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码对比
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-cborconcise-binary-object-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 CBOR（Concise Binary Object Representation）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 CBOR（Concise Binary Object Representation）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、零拷贝协议
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、零拷贝协议">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-flatbuffers-google" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 FlatBuffers — Google
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.1 FlatBuffers — Google">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        零拷贝原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-capn-proto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Cap'n Proto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.2 Cap&#39;n Proto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心理念
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flatbuffers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 FlatBuffers 的区别
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、全景对比
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、全景对比">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 性能与体积
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 特性矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、选型决策树
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、实践建议
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="八、实践建议">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 不要过早优化序列化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 混合使用是常态
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 关注 Schema 演进策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 安全考量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、什么是序列化
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="一、什么是序列化">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 评估维度
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、文本协议
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、文本协议">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-jsonjavascript-object-notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 JSON（JavaScript Object Notation）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 JSON（JavaScript Object Notation）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据类型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-xmlextensible-markup-language" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 XML（eXtensible Markup Language）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 XML（eXtensible Markup Language）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-yamlyaml-aint-markup-language" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 YAML（YAML Ain't Markup Language）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.3 YAML（YAML Ain&#39;t Markup Language）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、二进制协议（Schema-based）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、二进制协议（Schema-based）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-protocol-buffersprotobuf-google" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Protocol Buffers（Protobuf）— Google
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 Protocol Buffers（Protobuf）— Google">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-apache-thrift-facebook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Apache Thrift（原 Facebook）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Apache Thrift（原 Facebook）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        传输协议选项
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-apache-avro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Apache Avro
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.3 Apache Avro">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 演进
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kafka" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 Kafka 的结合
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-free" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、二进制协议（Schema-free）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、二进制协议（Schema-free）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-messagepack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 MessagePack
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 MessagePack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码对比
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-cborconcise-binary-object-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 CBOR（Concise Binary Object Representation）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 CBOR（Concise Binary Object Representation）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、零拷贝协议
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、零拷贝协议">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-flatbuffers-google" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 FlatBuffers — Google
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.1 FlatBuffers — Google">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        零拷贝原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-capn-proto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Cap'n Proto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.2 Cap&#39;n Proto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema 定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心理念
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flatbuffers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 FlatBuffers 的区别
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        优点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缺点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        适用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、全景对比
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、全景对比">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 性能与体积
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 特性矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、选型决策树
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、实践建议
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="八、实践建议">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 不要过早优化序列化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 混合使用是常态
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 关注 Schema 演进策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 安全考量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">序列化与反序列化协议：全面对比与选型指南<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<h2 id="_2">一、什么是序列化<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>序列化（Serialization）是将内存中的数据结构转换为可存储或传输的字节序列的过程；反序列化（Deserialization）则是其逆过程。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>内存对象  ──序列化──→  字节流  ──传输/存储──→  字节流  ──反序列化──→  内存对象
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>(语言相关)             (语言无关)                                    (可以是另一种语言)
+</span></code></pre></div>
+<p>序列化协议的选择直接影响系统的<strong>性能</strong>、<strong>兼容性</strong>、<strong>可维护性</strong>和<strong>跨语言能力</strong>，是分布式系统设计中的基础决策之一。</p>
+<h3 id="11">1.1 评估维度<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<p>选择序列化协议时，需要关注以下核心维度：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>编码效率</td>
+<td>序列化后数据体积大小</td>
+</tr>
+<tr>
+<td>编解码速度</td>
+<td>序列化/反序列化的 CPU 耗时</td>
+</tr>
+<tr>
+<td>可读性</td>
+<td>人类能否直接阅读和调试</td>
+</tr>
+<tr>
+<td>Schema 要求</td>
+<td>是否需要预定义数据结构</td>
+</tr>
+<tr>
+<td>兼容性</td>
+<td>字段增删后能否前后向兼容</td>
+</tr>
+<tr>
+<td>语言支持</td>
+<td>支持的编程语言数量和质量</td>
+</tr>
+<tr>
+<td>生态成熟度</td>
+<td>工具链、文档、社区活跃度</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_3">二、文本协议<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h3 id="21-jsonjavascript-object-notation">2.1 JSON（JavaScript Object Notation）<a class="headerlink" href="#21-jsonjavascript-object-notation" title="Permanent link">&para;</a></h3>
+<p>JSON 是当前使用最广泛的文本序列化格式，源自 JavaScript 对象字面量语法，由 Douglas Crockford 在 2001 年推广。</p>
+<h4 id="_4">数据类型<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h4>
+<p>JSON 仅支持 6 种数据类型：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;string&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hello&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;float&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.14</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;boolean&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;null_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;array&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">],</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;object&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;nested&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;value&quot;</span><span class="p">}</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">}</span>
+</span></code></pre></div>
+<h4 id="_5">编码示例<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h4>
+<p>以一个用户对象为例，后续所有协议都使用同一结构作为对比：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;张三&quot;</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;zhangsan@example.com&quot;</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;developer&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;golang&quot;</span><span class="p">],</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>该 JSON 编码后约 <strong>120 字节</strong>（含空格格式化）或 <strong>98 字节</strong>（紧凑模式）。</p>
+<h4 id="_6">优点<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>人类可读</strong>：无需任何工具即可阅读和编辑，调试极为方便</li>
+<li><strong>语言无关</strong>：几乎所有主流语言都有高质量的 JSON 库</li>
+<li><strong>浏览器原生支持</strong>：<code>JSON.parse()</code> / <code>JSON.stringify()</code> 是 Web 开发的基石</li>
+<li><strong>Schema-free</strong>：无需预定义结构，灵活应对快速迭代</li>
+<li><strong>标准明确</strong>：RFC 8259 规范简洁，实现一致性好</li>
+</ul>
+<h4 id="_7">缺点<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>体积冗余</strong>：字段名在每条记录中重复传输，批量数据场景浪费严重</li>
+<li><strong>不支持二进制</strong>：图片、音频等二进制数据必须 Base64 编码，体积膨胀约 33%</li>
+<li><strong>数值精度问题</strong>：JavaScript 的 <code>Number</code> 类型是 IEEE 754 双精度浮点数，超过 2^53 的整数会丢失精度</li>
+<li><strong>无注释支持</strong>：标准 JSON 不允许注释，作为配置文件不够友好</li>
+<li><strong>解析性能</strong>：文本解析天然慢于二进制格式</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">大整数陷阱</p>
+<p>在与前端交互时，后端返回的 <code>int64</code> 类型 ID 如果超过 <code>9007199254740991</code>（2^53 - 1），JavaScript 会静默丢失精度。常见解决方案是将大整数序列化为字符串：
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;9223372036854775807&quot;</span><span class="p">}</span>
+</span></code></pre></div></p>
+</div>
+<h4 id="_8">适用场景<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h4>
+<ul>
+<li>RESTful API 请求与响应</li>
+<li>前后端数据交互</li>
+<li>配置文件（需要人工编辑的场景）</li>
+<li>日志结构化输出</li>
+</ul>
+<hr />
+<h3 id="22-xmlextensible-markup-language">2.2 XML（eXtensible Markup Language）<a class="headerlink" href="#22-xmlextensible-markup-language" title="Permanent link">&para;</a></h3>
+<p>XML 诞生于 1998 年，曾是 Web 服务和企业集成的主流格式。</p>
+<div class="language-xml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">&lt;user&gt;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&lt;id&gt;</span>12345<span class="nt">&lt;/id&gt;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&lt;name&gt;</span>张三<span class="nt">&lt;/name&gt;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&lt;email&gt;</span>zhangsan@example.com<span class="nt">&lt;/email&gt;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&lt;tags&gt;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&lt;tag&gt;</span>developer<span class="nt">&lt;/tag&gt;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&lt;tag&gt;</span>golang<span class="nt">&lt;/tag&gt;</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">&lt;/tags&gt;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">&lt;active&gt;</span>true<span class="nt">&lt;/active&gt;</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nt">&lt;/user&gt;</span>
+</span></code></pre></div>
+<p>同样的数据，XML 编码约 <strong>230 字节</strong>，是 JSON 的 2 倍以上。</p>
+<h4 id="_9">优点<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>强 Schema 验证</strong>：XSD/DTD 提供严格的类型约束和结构校验</li>
+<li><strong>命名空间</strong>：支持多个 Schema 在同一文档中共存，避免命名冲突</li>
+<li><strong>成熟的查询语言</strong>：XPath、XQuery 提供强大的数据查询能力</li>
+<li><strong>转换能力</strong>：XSLT 可以将 XML 转换为任意格式</li>
+<li><strong>属性与元素分离</strong>：<code>&lt;user id="123" active="true"&gt;</code> 的属性语法在某些场景更紧凑</li>
+</ul>
+<h4 id="_10">缺点<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>极度冗余</strong>：开闭标签导致大量重复，数据信噪比低</li>
+<li><strong>解析复杂</strong>：DOM 解析内存占用大，SAX 解析编程复杂</li>
+<li><strong>开发体验差</strong>：手写 XML 痛苦，XML Schema 本身的学习曲线陡峭</li>
+<li><strong>安全隐患</strong>：XXE（XML External Entity）注入是常见攻击面</li>
+</ul>
+<div class="admonition danger">
+<p class="admonition-title">XXE 攻击</p>
+<p>如果 XML 解析器没有禁用外部实体，攻击者可以读取服务器文件：
+<div class="language-xml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="cp">&lt;!DOCTYPE foo [</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="cp">  &lt;!ENTITY xxe SYSTEM &quot;file:///etc/passwd&quot;&gt;</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>]&gt;
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">&lt;user&gt;&lt;name&gt;</span><span class="ni">&amp;xxe;</span><span class="nt">&lt;/name&gt;&lt;/user&gt;</span>
+</span></code></pre></div>
+务必在解析 XML 时禁用 <code>EXTERNAL_GENERAL_ENTITIES</code> 和 <code>EXTERNAL_PARAMETER_ENTITIES</code>。</p>
+</div>
+<h4 id="_11">适用场景<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h4>
+<ul>
+<li>SOAP Web 服务（遗留系统）</li>
+<li>企业应用集成（EDI、HL7 医疗数据）</li>
+<li>文档标记（XHTML、SVG、Office Open XML）</li>
+<li>Android 布局文件</li>
+</ul>
+<hr />
+<h3 id="23-yamlyaml-aint-markup-language">2.3 YAML（YAML Ain't Markup Language）<a class="headerlink" href="#23-yamlyaml-aint-markup-language" title="Permanent link">&para;</a></h3>
+<p>YAML 以人类可读性为首要设计目标，广泛用于配置文件。</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">张三</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zhangsan@example.com</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">tags</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">developer</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">golang</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span></code></pre></div>
+<h4 id="_12">优点<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>可读性最佳</strong>：缩进表示层级，没有多余的括号和引号</li>
+<li><strong>支持注释</strong>：<code>#</code> 开头的注释让配置文件更易维护</li>
+<li><strong>锚点与引用</strong>：<code>&amp;anchor</code> 和 <code>*anchor</code> 可以复用重复数据</li>
+<li><strong>多文档支持</strong>：单文件中用 <code>---</code> 分隔多个文档</li>
+</ul>
+<h4 id="_13">缺点<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>缩进敏感</strong>：Tab 和空格混用会导致难以发现的错误</li>
+<li><strong>规范复杂</strong>：YAML 1.2 规范超过 80 页，解析器实现差异大</li>
+<li><strong>隐式类型转换</strong>：<code>yes</code>/<code>no</code>、<code>on</code>/<code>off</code> 被自动转为布尔值，<code>010</code> 被当作八进制</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">YAML 的隐式类型转换陷阱</p>
+<p><div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 这些值不是你以为的字符串</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">country</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NO</span><span class="w">        </span><span class="c1"># 布尔值 false，不是挪威国家代码</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.10</span><span class="w">      </span><span class="c1"># 浮点数 1.1，不是字符串 &quot;1.10&quot;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">010</span><span class="w">          </span><span class="c1"># 八进制 8，不是十进制 10</span>
+</span></code></pre></div>
+建议对所有非数值、非布尔的值加引号：<code>country: "NO"</code>。</p>
+</div>
+<ul>
+<li><strong>安全隐患</strong>：某些 YAML 库支持反序列化为任意对象，可导致远程代码执行</li>
+</ul>
+<h4 id="_14">适用场景<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Kubernetes 资源定义</li>
+<li>Docker Compose 配置</li>
+<li>CI/CD 流水线配置（GitHub Actions、GitLab CI）</li>
+<li>Ansible Playbook</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">YAML 不适合数据传输</p>
+<p>YAML 的设计目标是人类可读的配置，而非高效的数据交换。在服务间通信中使用 YAML 会带来不必要的解析开销和安全风险。</p>
+</div>
+<hr />
+<h2 id="schema-based">三、二进制协议（Schema-based）<a class="headerlink" href="#schema-based" title="Permanent link">&para;</a></h2>
+<p>这一类协议要求预先定义数据结构（Schema），编码时只传输值，不传输字段名，因此体积小、速度快。</p>
+<h3 id="31-protocol-buffersprotobuf-google">3.1 Protocol Buffers（Protobuf）— Google<a class="headerlink" href="#31-protocol-buffersprotobuf-google" title="Permanent link">&para;</a></h3>
+<p>Protobuf 是 Google 于 2008 年开源的二进制序列化协议，目前是 gRPC 的默认序列化格式，在业界使用极为广泛。</p>
+<h4 id="schema">Schema 定义<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h4>
+<div class="language-protobuf highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">syntax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;proto3&quot;</span><span class="p">;</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kd">message</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="kt">int32</span><span class="w">  </span><span class="na">id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="na">name</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="na">email</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="k">repeated</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="na">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="kt">bool</span><span class="w">   </span><span class="na">active</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>其中 <code>= 1</code>、<code>= 2</code> 是<strong>字段编号</strong>（field number），而非默认值。编码时使用字段编号代替字段名，这是 Protobuf 体积小的关键。</p>
+<h4 id="_15">编码原理<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h4>
+<p>Protobuf 使用 <strong>Tag-Length-Value (TLV)</strong> 编码：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>┌──────────┬──────────┬────────────┐
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>│   Tag    │  Length  │   Value    │
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>│ (varint) │ (varint) │  (bytes)  │
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>└──────────┴──────────┴────────────┘
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>Tag = (field_number &lt;&lt; 3) | wire_type
+</span></code></pre></div>
+<p>Wire Type 定义了值的编码方式：</p>
+<table>
+<thead>
+<tr>
+<th>Wire Type</th>
+<th>含义</th>
+<th>适用类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Varint</td>
+<td>int32, int64, bool, enum</td>
+</tr>
+<tr>
+<td>1</td>
+<td>64-bit</td>
+<td>fixed64, double</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Length-delimited</td>
+<td>string, bytes, 嵌套 message</td>
+</tr>
+<tr>
+<td>5</td>
+<td>32-bit</td>
+<td>fixed32, float</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Varint 编码</strong>是 Protobuf 高效编码整数的核心：每个字节的最高位是继续标志位（MSB），剩余 7 位存储数据。小整数只需 1-2 字节。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>数值 300 的 Varint 编码：
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>300 = 100101100 (二进制)
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>拆分为 7-bit 组（低位在前）：
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  0101100  0000010
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>加 MSB 继续位：
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a> 10101100 00000010  → 2 字节
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>对比 int32 固定编码需要 4 字节
+</span></code></pre></div>
+<p>同样的用户对象，Protobuf 编码后约 <strong>45 字节</strong>，仅为 JSON 的一半不到。</p>
+<h4 id="_16">兼容性规则<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h4>
+<p>Protobuf 的前后向兼容性是其核心优势之一：</p>
+<div class="language-protobuf highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1">// v1：原始版本</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kd">message</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="kt">int32</span><span class="w">  </span><span class="na">id</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">}</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1">// v2：新增字段（前向兼容）</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="kd">message</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span><span class="kt">int32</span><span class="w">  </span><span class="na">id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="na">name</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="na">email</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">  </span><span class="c1">// 新字段，旧代码会忽略</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">}</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="c1">// v3：删除字段（后向兼容）</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="kd">message</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">  </span><span class="kt">int32</span><span class="w">  </span><span class="na">id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="na">name</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span><span class="k">reserved</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">          </span><span class="c1">// 保留已删除的字段编号</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="p">}</span>
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">兼容性黄金规则</p>
+<ul>
+<li><strong>绝不更改已有字段的编号</strong></li>
+<li><strong>绝不更改已有字段的类型</strong>（部分类型兼容除外）</li>
+<li><strong>删除字段时使用 <code>reserved</code></strong> 防止编号被复用</li>
+<li><strong>新增字段使用新编号</strong></li>
+</ul>
+</div>
+<h4 id="_17">优点<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h4>
+<ul>
+<li>体积小，编解码速度快</li>
+<li>强类型约束，编译期发现错误</li>
+<li>优秀的前后向兼容性</li>
+<li>多语言代码自动生成（C++、Java、Go、Python、Rust 等）</li>
+<li>与 gRPC 深度集成</li>
+</ul>
+<h4 id="_18">缺点<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h4>
+<ul>
+<li>二进制格式不可读，调试需要 <code>protoc --decode</code> 或 grpcurl</li>
+<li>需要预定义 <code>.proto</code> 文件并编译，开发流程增加一步</li>
+<li>不适合动态或自描述场景</li>
+<li>Map 类型的序列化顺序不确定，不能直接做字节级比较</li>
+<li>proto3 取消了 <code>required</code>/<code>optional</code> 语义（后来部分恢复），默认值不被序列化</li>
+</ul>
+<h4 id="_19">适用场景<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h4>
+<ul>
+<li>gRPC 微服务间通信</li>
+<li>移动端与后端通信（省流量）</li>
+<li>高性能内部 RPC</li>
+<li>持久化存储格式</li>
+</ul>
+<hr />
+<h3 id="32-apache-thrift-facebook">3.2 Apache Thrift（原 Facebook）<a class="headerlink" href="#32-apache-thrift-facebook" title="Permanent link">&para;</a></h3>
+<p>Thrift 由 Facebook 于 2007 年开发，提供了序列化 + RPC 的一体化方案。</p>
+<h4 id="schema_1">Schema 定义<a class="headerlink" href="#schema_1" title="Permanent link">&para;</a></h4>
+<div class="language-thrift highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kd">struct</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="kt">i32</span><span class="w">    </span><span class="n">id</span><span class="p">,</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="mi">2</span><span class="p">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="mi">3</span><span class="p">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="mi">4</span><span class="p">:</span><span class="w"> </span><span class="kt">list</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span><span class="mi">5</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="w">   </span><span class="n">active</span><span class="p">,</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">}</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="kd">service</span><span class="w"> </span><span class="nc">UserService</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span><span class="n">User</span><span class="w"> </span><span class="nf">getUser</span><span class="o">(</span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="kt">i32</span><span class="w"> </span><span class="n">id</span><span class="p">),</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">createUser</span><span class="o">(</span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="p">),</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="p">}</span>
+</span></code></pre></div>
+<h4 id="_20">传输协议选项<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h4>
+<p>Thrift 的一大特色是支持多种传输协议：</p>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>特点</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TBinaryProtocol</td>
+<td>简单二进制，字段类型+编号+值</td>
+<td>通用场景</td>
+</tr>
+<tr>
+<td>TCompactProtocol</td>
+<td>使用 varint 和 zigzag 编码，体积更小</td>
+<td>带宽受限</td>
+</tr>
+<tr>
+<td>TJSONProtocol</td>
+<td>JSON 格式，可读</td>
+<td>调试</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_21">优点<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h4>
+<ul>
+<li>序列化 + RPC 一体化，降低技术选型复杂度</li>
+<li>多种传输协议可选，灵活适配不同场景</li>
+<li>支持丰富的数据类型（map、set、enum）</li>
+<li>多语言代码生成</li>
+</ul>
+<h4 id="_22">缺点<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h4>
+<ul>
+<li>社区活跃度持续下降，不如 Protobuf/gRPC</li>
+<li>文档质量和工具链偏弱</li>
+<li>缺少官方的 Schema 演进指导</li>
+<li>框架整体较重</li>
+</ul>
+<h4 id="_23">适用场景<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Facebook 系技术栈</li>
+<li>已有 Thrift 基础的遗留系统</li>
+<li>需要一体化 RPC 方案的场景</li>
+</ul>
+<hr />
+<h3 id="33-apache-avro">3.3 Apache Avro<a class="headerlink" href="#33-apache-avro" title="Permanent link">&para;</a></h3>
+<p>Avro 是 Hadoop 之父 Doug Cutting 创建的序列化框架，专为大数据场景设计。</p>
+<h4 id="schema_2">Schema 定义<a class="headerlink" href="#schema_2" title="Permanent link">&para;</a></h4>
+<p>Avro 的 Schema 使用 JSON 表示：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;record&quot;</span><span class="p">,</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User&quot;</span><span class="p">,</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w">     </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;int&quot;</span><span class="p">},</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tags&quot;</span><span class="p">,</span><span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">}},</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">}</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="p">}</span>
+</span></code></pre></div>
+<h4 id="_24">编码原理<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h4>
+<p>与 Protobuf 不同，Avro 编码时<strong>完全不包含字段标识信息</strong>——既没有字段名，也没有字段编号。解码完全依赖 Schema 中定义的字段顺序：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Protobuf:  [tag1][value1] [tag2][value2] [tag3][value3]  ← 每个值前有 tag
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>Avro:      [value1] [value2] [value3]                     ← 纯值，无 tag
+</span></code></pre></div>
+<p>这使得 Avro 的编码体积比 Protobuf 更小，但也意味着<strong>没有 Schema 就无法解码</strong>。</p>
+<h4 id="schema_3">Schema 演进<a class="headerlink" href="#schema_3" title="Permanent link">&para;</a></h4>
+<p>Avro 的 Schema 演进模型是其最强大的特性。读端和写端可以使用不同版本的 Schema，Avro 运行时通过 <strong>Schema Resolution</strong> 自动适配：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Writer Schema (v1)          Reader Schema (v2)
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>┌───────────────┐           ┌───────────────┐
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>│ id:    int     │           │ id:    int     │
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>│ name:  string  │    ──→    │ name:  string  │
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>│ email: string  │  resolve  │ email: string  │
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>└───────────────┘           │ role:  string   │  ← 新增字段，使用默认值
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>                            └───────────────┘
+</span></code></pre></div>
+<h4 id="kafka">与 Kafka 的结合<a class="headerlink" href="#kafka" title="Permanent link">&para;</a></h4>
+<p>Avro 在 Kafka 生态中通常与 <strong>Schema Registry</strong> 配合使用：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Producer                    Schema Registry               Consumer
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>   │                              │                           │
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>   ├─ 注册 Schema v1 ──────────→  │                           │
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>   │  ← schema_id=1 ────────────  │                           │
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>   │                              │                           │
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>   ├─ 发送消息 ──────────────────────────────────────────────→ │
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>   │  [magic][schema_id=1][avro_bytes]                        │
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>   │                              │                           │
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>   │                              │  ← 获取 Schema (id=1) ── │
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>   │                              │  ── 返回 Schema ────────→ │
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>   │                              │                           │
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>   │                              │         解码 avro_bytes   │
+</span></code></pre></div>
+<h4 id="_25">优点<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Schema 演进能力最强（读写 Schema 可独立演进）</li>
+<li>编码体积最小（无字段标识开销）</li>
+<li>不需要代码生成（可动态解析）</li>
+<li>与 Hadoop/Spark/Kafka 生态深度集成</li>
+<li>Avro 文件格式自带 Schema（自描述）</li>
+</ul>
+<h4 id="_26">缺点<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h4>
+<ul>
+<li>随机访问能力弱（流式格式，需顺序读取）</li>
+<li>编解码速度不如 Protobuf</li>
+<li>脱离大数据生态使用较少</li>
+<li>Schema 用 JSON 编写，较为冗长</li>
+</ul>
+<h4 id="_27">适用场景<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Kafka 消息序列化（配合 Schema Registry）</li>
+<li>Hadoop/Spark 数据管道</li>
+<li>数据湖存储格式</li>
+<li>需要强 Schema 演进的场景</li>
+</ul>
+<hr />
+<h2 id="schema-free">四、二进制协议（Schema-free）<a class="headerlink" href="#schema-free" title="Permanent link">&para;</a></h2>
+<p>这类协议不需要预定义 Schema，可以像 JSON 一样灵活使用，但采用二进制编码以获得更好的性能。</p>
+<h3 id="41-messagepack">4.1 MessagePack<a class="headerlink" href="#41-messagepack" title="Permanent link">&para;</a></h3>
+<p>MessagePack 自称 "It's like JSON, but fast and small"，是 JSON 的二进制替代品。</p>
+<h4 id="_28">编码对比<a class="headerlink" href="#_28" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>JSON (27 bytes):
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>{&quot;compact&quot;:true,&quot;schema&quot;:0}
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>MessagePack (18 bytes):
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>82 a7 63 6f 6d 70 61 63 74 c3 a6 73 63 68 65 6d 61 00
+</span></code></pre></div>
+<p>MessagePack 的类型系统是 JSON 的超集：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>JSON</th>
+<th>MessagePack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>整数</td>
+<td>Number</td>
+<td>int 8/16/32/64, uint 8/16/32/64</td>
+</tr>
+<tr>
+<td>浮点</td>
+<td>Number</td>
+<td>float 32/64</td>
+</tr>
+<tr>
+<td>字符串</td>
+<td>String</td>
+<td>str</td>
+</tr>
+<tr>
+<td>二进制</td>
+<td>不支持</td>
+<td>bin</td>
+</tr>
+<tr>
+<td>布尔</td>
+<td>Boolean</td>
+<td>bool</td>
+</tr>
+<tr>
+<td>空值</td>
+<td>null</td>
+<td>nil</td>
+</tr>
+<tr>
+<td>数组</td>
+<td>Array</td>
+<td>array</td>
+</tr>
+<tr>
+<td>映射</td>
+<td>Object</td>
+<td>map</td>
+</tr>
+<tr>
+<td>扩展</td>
+<td>不支持</td>
+<td>ext（自定义类型）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_29">优点<a class="headerlink" href="#_29" title="Permanent link">&para;</a></h4>
+<ul>
+<li>比 JSON 体积小 30%-50%，速度快 2-5 倍</li>
+<li>Schema-free，使用方式和 JSON 一样灵活</li>
+<li>原生支持二进制数据</li>
+<li>类型系统比 JSON 丰富（区分整数/浮点、有二进制类型）</li>
+<li>多语言支持广泛</li>
+</ul>
+<h4 id="_30">缺点<a class="headerlink" href="#_30" title="Permanent link">&para;</a></h4>
+<ul>
+<li>不可读，调试需要工具</li>
+<li>没有 Schema 约束，无法做编译期校验</li>
+<li>压缩率不如 Protobuf 等 Schema-based 方案</li>
+<li>不同语言实现的兼容性偶有差异</li>
+</ul>
+<h4 id="_31">适用场景<a class="headerlink" href="#_31" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Redis 等缓存系统中的值序列化</li>
+<li>实时通信协议（游戏、IM）</li>
+<li>需要替换 JSON 但不想引入 Schema 管理的场景</li>
+<li>嵌入式系统间通信</li>
+</ul>
+<hr />
+<h3 id="42-cborconcise-binary-object-representation">4.2 CBOR（Concise Binary Object Representation）<a class="headerlink" href="#42-cborconcise-binary-object-representation" title="Permanent link">&para;</a></h3>
+<p>CBOR 是 IETF 标准（RFC 8949），设计目标是在极小的代码量下实现高效的二进制编码，特别适合受限设备。</p>
+<h4 id="_32">编码结构<a class="headerlink" href="#_32" title="Permanent link">&para;</a></h4>
+<p>CBOR 使用统一的 <strong>主类型 + 附加信息</strong> 编码：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>每个数据项的第一个字节：
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>┌─────────────┬──────────────────┐
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>│ 主类型 (3bit) │ 附加信息 (5bit)   │
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>└─────────────┴──────────────────┘
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>主类型：
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>0 = 无符号整数    1 = 负整数
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>2 = 字节串        3 = 文本串
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>4 = 数组          5 = 映射
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>6 = 语义标签      7 = 浮点/简单值
+</span></code></pre></div>
+<h4 id="_33">优点<a class="headerlink" href="#_33" title="Permanent link">&para;</a></h4>
+<ul>
+<li>IETF 标准（RFC 8949），规范严谨且稳定</li>
+<li>代码实现极小（适合嵌入式 MCU）</li>
+<li>支持语义标签扩展（时间戳、大数、正则等）</li>
+<li>确定性编码模式（可用于签名和去重）</li>
+</ul>
+<h4 id="_34">缺点<a class="headerlink" href="#_34" title="Permanent link">&para;</a></h4>
+<ul>
+<li>生态不如 MessagePack 和 JSON</li>
+<li>开发者熟悉度低，工具链偏少</li>
+</ul>
+<h4 id="_35">适用场景<a class="headerlink" href="#_35" title="Permanent link">&para;</a></h4>
+<ul>
+<li>IoT / 嵌入式设备通信（CoAP 协议默认格式）</li>
+<li>WebAuthn / FIDO2 认证协议</li>
+<li>COSE 数字签名</li>
+<li>需要标准化二进制编码的场景</li>
+</ul>
+<hr />
+<h2 id="_36">五、零拷贝协议<a class="headerlink" href="#_36" title="Permanent link">&para;</a></h2>
+<p>传统的序列化协议在反序列化时需要将字节流解析为内存对象，这涉及内存分配和数据拷贝。零拷贝协议消除了这个开销——序列化后的字节流可以直接作为内存中的数据结构访问。</p>
+<h3 id="51-flatbuffers-google">5.1 FlatBuffers — Google<a class="headerlink" href="#51-flatbuffers-google" title="Permanent link">&para;</a></h3>
+<p>FlatBuffers 由 Google 为游戏开发创建，是 Android 平台上 TensorFlow Lite 模型格式的基础。</p>
+<h4 id="schema_4">Schema 定义<a class="headerlink" href="#schema_4" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>table User {
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>  id:    int;
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>  name:  string;
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>  email: string;
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>  tags:  [string];
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>  active: bool = true;
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>}
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>root_type User;
+</span></code></pre></div>
+<h4 id="_37">零拷贝原理<a class="headerlink" href="#_37" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>传统协议（如 Protobuf）：
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>  字节流 ──parse──→ 分配内存 ──→ 填充字段 ──→ 返回对象
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>                    (malloc)     (memcpy)
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>FlatBuffers：
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>  字节流 ──────→ 直接在 buffer 上读取字段（通过偏移量表）
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>                 无内存分配，无数据拷贝
+</span></code></pre></div>
+<p>FlatBuffers 的数据布局：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>┌────────────┬───────────┬──────────────────────────┐
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>│ root offset │  vtable   │        data tables       │
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>│  (4 bytes)  │ (offsets) │  (字段值，按偏移量访问)    │
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>└────────────┴───────────┴──────────────────────────┘
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>访问 user.name：
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>1. 从 vtable 查找 name 字段的偏移量
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>2. 从 buffer 的该偏移位置直接读取字符串
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>全程无需 malloc 或 memcpy
+</span></code></pre></div>
+<h4 id="_38">优点<a class="headerlink" href="#_38" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>零反序列化开销</strong>：访问时间 O(1)，不随数据大小增长</li>
+<li>内存效率极高，无需额外分配</li>
+<li>支持随机访问任意字段</li>
+<li>适合只读场景（如读取配置、模型参数）</li>
+<li>支持可选的对象 API（牺牲零拷贝换取易用性）</li>
+</ul>
+<h4 id="_39">缺点<a class="headerlink" href="#_39" title="Permanent link">&para;</a></h4>
+<ul>
+<li>构建数据时 API 较繁琐（需要先创建子对象，再组装）</li>
+<li>序列化后体积不一定比 Protobuf 小（有对齐填充）</li>
+<li>修改已序列化的数据困难（本质是只读设计）</li>
+<li>生态和社区不如 Protobuf</li>
+</ul>
+<h4 id="_40">适用场景<a class="headerlink" href="#_40" title="Permanent link">&para;</a></h4>
+<ul>
+<li>游戏引擎（Unity、Unreal）</li>
+<li>TensorFlow Lite 模型格式</li>
+<li>对反序列化延迟极度敏感的系统</li>
+<li>嵌入式/移动端内存受限场景</li>
+</ul>
+<hr />
+<h3 id="52-capn-proto">5.2 Cap'n Proto<a class="headerlink" href="#52-capn-proto" title="Permanent link">&para;</a></h3>
+<p>Cap'n Proto 由 Protobuf v2 的作者 Kenton Varda 创建，可以看作是 Protobuf 理念的极致演进。</p>
+<h4 id="schema_5">Schema 定义<a class="headerlink" href="#schema_5" title="Permanent link">&para;</a></h4>
+<div class="language-capnp highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">struct</span><span class="w"> </span><span class="n">User</span><span class="w"> </span>{
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="n">id</span><span class="w">    </span><span class="nd">@0</span><span class="w"> </span><span class="nc">: Int32</span>;
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span><span class="n">name</span><span class="w">  </span><span class="nd">@1</span><span class="w"> </span><span class="nc">: Text</span>;
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span><span class="n">email</span><span class="w"> </span><span class="nd">@2</span><span class="w"> </span><span class="nc">: Text</span>;
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span><span class="n">tags</span><span class="w">  </span><span class="nd">@3</span><span class="w"> </span><span class="nc">: List(Text)</span>;
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span><span class="n">active</span><span class="w"> </span><span class="nd">@4</span><span class="w"> </span><span class="nc">: Bool</span>;
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>}
+</span></code></pre></div>
+<h4 id="_41">核心理念<a class="headerlink" href="#_41" title="Permanent link">&para;</a></h4>
+<p>Cap'n Proto 的核心思想是 <strong>"编码即是内存布局"</strong>——数据在内存中的表示和在网络上的表示完全一致，因此序列化的开销严格为零。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>传统流程：  内存对象 ──serialize──→ 字节流 ──send──→ 字节流 ──deserialize──→ 内存对象
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>Cap&#39;n Proto：内存对象 ═══════════════ 字节流 ══send══→ 字节流 ═══════════════ 内存对象
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>             (相同的东西，零转换)
+</span></code></pre></div>
+<h4 id="flatbuffers">与 FlatBuffers 的区别<a class="headerlink" href="#flatbuffers" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>FlatBuffers</th>
+<th>Cap'n Proto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>随机访问</td>
+<td>通过 vtable</td>
+<td>通过指针</td>
+</tr>
+<tr>
+<td>修改数据</td>
+<td>困难</td>
+<td>支持（原地修改）</td>
+</tr>
+<tr>
+<td>内置 RPC</td>
+<td>无</td>
+<td>有</td>
+</tr>
+<tr>
+<td>对齐方式</td>
+<td>需要手动对齐</td>
+<td>自动 8 字节对齐</td>
+</tr>
+<tr>
+<td>主要用户</td>
+<td>Google, Android</td>
+<td>Cloudflare</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_42">优点<a class="headerlink" href="#_42" title="Permanent link">&para;</a></h4>
+<ul>
+<li>严格零拷贝，序列化开销为零</li>
+<li>内置 RPC 框架（支持 promise pipelining）</li>
+<li>支持原地修改数据</li>
+<li>设计精良，API 比 FlatBuffers 更直观</li>
+</ul>
+<h4 id="_43">缺点<a class="headerlink" href="#_43" title="Permanent link">&para;</a></h4>
+<ul>
+<li>语言支持有限（C++、Rust 为一等公民，其他语言支持参差不齐）</li>
+<li>8 字节对齐导致体积可能大于 Protobuf</li>
+<li>社区规模小，生态尚未成熟</li>
+<li>学习资料少</li>
+</ul>
+<h4 id="_44">适用场景<a class="headerlink" href="#_44" title="Permanent link">&para;</a></h4>
+<ul>
+<li>进程间通信（IPC）</li>
+<li>Cloudflare Workers 内部通信</li>
+<li>对延迟有极致要求的系统</li>
+<li>需要 RPC + 零拷贝序列化一体化的场景</li>
+</ul>
+<hr />
+<h2 id="_45">六、全景对比<a class="headerlink" href="#_45" title="Permanent link">&para;</a></h2>
+<h3 id="61">6.1 性能与体积<a class="headerlink" href="#61" title="Permanent link">&para;</a></h3>
+<p>以同一个包含 1000 条用户记录的数据集为基准（数据为典型估算值，实际取决于数据特征和实现库）：</p>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>编码体积</th>
+<th>编码速度</th>
+<th>解码速度</th>
+<th>零拷贝</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON</td>
+<td>100% (基准)</td>
+<td>1x</td>
+<td>1x</td>
+<td>否</td>
+</tr>
+<tr>
+<td>XML</td>
+<td>~200%</td>
+<td>0.5x</td>
+<td>0.3x</td>
+<td>否</td>
+</tr>
+<tr>
+<td>Protobuf</td>
+<td>~35%</td>
+<td>5-10x</td>
+<td>5-10x</td>
+<td>否</td>
+</tr>
+<tr>
+<td>Thrift (compact)</td>
+<td>~38%</td>
+<td>4-8x</td>
+<td>4-8x</td>
+<td>否</td>
+</tr>
+<tr>
+<td>Avro</td>
+<td>~30%</td>
+<td>3-6x</td>
+<td>3-6x</td>
+<td>否</td>
+</tr>
+<tr>
+<td>MessagePack</td>
+<td>~55%</td>
+<td>2-4x</td>
+<td>2-4x</td>
+<td>否</td>
+</tr>
+<tr>
+<td>FlatBuffers</td>
+<td>~45%</td>
+<td>3-5x</td>
+<td>即时</td>
+<td>是</td>
+</tr>
+<tr>
+<td>Cap'n Proto</td>
+<td>~50%</td>
+<td>即时</td>
+<td>即时</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62">6.2 特性矩阵<a class="headerlink" href="#62" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>JSON</th>
+<th>Protobuf</th>
+<th>Avro</th>
+<th>MsgPack</th>
+<th>CBOR</th>
+<th>FlatBuf</th>
+<th>Cap'n Proto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>人类可读</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+</tr>
+<tr>
+<td>需要 Schema</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>Schema 演进</td>
+<td>N/A</td>
+<td>好</td>
+<td>最佳</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>好</td>
+<td>好</td>
+</tr>
+<tr>
+<td>自描述</td>
+<td>是</td>
+<td>否</td>
+<td>文件级</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+</tr>
+<tr>
+<td>二进制数据</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>内置 RPC</td>
+<td>否</td>
+<td>gRPC</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr>
+<td>语言支持</td>
+<td>极广</td>
+<td>广</td>
+<td>中</td>
+<td>广</td>
+<td>中</td>
+<td>中</td>
+<td>窄</td>
+</tr>
+<tr>
+<td>标准化</td>
+<td>RFC 8259</td>
+<td>Google</td>
+<td>Apache</td>
+<td>社区</td>
+<td>RFC 8949</td>
+<td>Google</td>
+<td>社区</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_46">七、选型决策树<a class="headerlink" href="#_46" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>需要序列化协议？
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>│
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>├─ 与浏览器/前端交互？
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>│  └─→ JSON
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>│
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>├─ 配置文件？
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>│  ├─ 需要注释？ → YAML
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>│  └─ 不需要？   → JSON
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>│
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>├─ 服务间通信（RPC）？
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>│  ├─ 愿意引入 Schema？
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>│  │  ├─ 需要 gRPC？        → Protobuf
+</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>│  │  ├─ 遗留 Thrift 系统？  → Thrift
+</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>│  │  └─ 需要零拷贝？       → Cap&#39;n Proto / FlatBuffers
+</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>│  └─ 不想引入 Schema？
+</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>│     └─→ MessagePack
+</span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>│
+</span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>├─ 大数据管道 / 消息队列？
+</span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>│  └─→ Avro（配合 Schema Registry）
+</span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a>│
+</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a>├─ IoT / 嵌入式？
+</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a>│  ├─ 需要 IETF 标准？ → CBOR
+</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>│  └─ 内存极度受限？   → FlatBuffers
+</span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a>│
+</span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>└─ 游戏引擎 / 极致延迟？
+</span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>   └─→ FlatBuffers
+</span></code></pre></div>
+<hr />
+<h2 id="_47">八、实践建议<a class="headerlink" href="#_47" title="Permanent link">&para;</a></h2>
+<h3 id="81">8.1 不要过早优化序列化<a class="headerlink" href="#81" title="Permanent link">&para;</a></h3>
+<p>对于大多数 Web 应用，JSON 的性能完全够用。只有当序列化成为瓶颈时（通过 profiling 确认），才值得切换到二进制协议。切换协议带来的维护成本、工具链成本和团队学习成本不容忽视。</p>
+<h3 id="82">8.2 混合使用是常态<a class="headerlink" href="#82" title="Permanent link">&para;</a></h3>
+<p>一个典型的现代系统可能同时使用多种协议：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>浏览器 ──JSON──→ API Gateway ──Protobuf──→ 微服务
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>                                             │
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>                                        Avro + Kafka
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>                                             │
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>                                        Spark / Flink
+</span></code></pre></div>
+<h3 id="83-schema">8.3 关注 Schema 演进策略<a class="headerlink" href="#83-schema" title="Permanent link">&para;</a></h3>
+<p>如果选择了 Schema-based 协议，务必在项目初期就建立 Schema 演进规范：</p>
+<ul>
+<li><strong>Protobuf</strong>：永远不要复用已删除的字段编号，使用 <code>reserved</code> 关键字</li>
+<li><strong>Avro</strong>：使用 Schema Registry 管理版本，设置兼容性级别（BACKWARD / FORWARD / FULL）</li>
+<li><strong>通用规则</strong>：新增字段给默认值，删除字段保持向后兼容，字段类型变更要格外谨慎</li>
+</ul>
+<h3 id="84">8.4 安全考量<a class="headerlink" href="#84" title="Permanent link">&para;</a></h3>
+<ul>
+<li>XML：禁用外部实体解析，防止 XXE 攻击</li>
+<li>YAML：使用 <code>safe_load</code> 而非 <code>load</code>，禁止反序列化任意对象</li>
+<li>所有协议：对反序列化的数据进行校验，不信任外部输入的合法性</li>
+<li>设置反序列化的大小上限，防止内存耗尽攻击</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
