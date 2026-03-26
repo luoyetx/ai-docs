@@ -14,6 +14,7 @@
 
 - [序列化与反序列化协议](fundamentals/serialization.md) — JSON、Protobuf、Avro 等主流协议的全面对比与选型指南
 - [Vespa SLIME 编解码](fundamentals/slime.md) — 深入 SLIME 二进制格式的编码原理与源码实现
+- [Trie 数据结构](fundamentals/trie.md) — 从基础 Trie 到 Radix Tree、ART、DAWG、Double-Array 等高级变种全解析
 
 ## 关于
 
