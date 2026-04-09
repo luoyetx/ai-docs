@@ -46,6 +46,7 @@ nav:
     - 序列化协议: fundamentals/serialization.md
     - Vespa SLIME 编解码: fundamentals/slime.md
     - Trie 数据结构: fundamentals/trie.md
+    - 整数编解码: fundamentals/integer-encoding.md
 
 markdown_extensions:
   - pymdownx.highlight:
